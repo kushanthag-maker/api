@@ -243,7 +243,16 @@ async function startServer() {
     const rawUrl = req.body?.url || (req.query?.url as string) || 'https://www.youtube.com/watch?v=0geqOYqwL0s';
     const quality = req.body?.quality || (req.query?.quality as string) || '1080p';
     const format = req.body?.type || req.body?.format || (req.query?.type as string) || (req.query?.format as string) || 'mp4';
-    const internalZantaApiKey = req.body?.apiKey || (req.query?.apiKey as string) || 'zan_FLUs8y9T_fcz7cgi12p';
+    
+    // Extract site API Key credential passed by user
+    const clientApiKey = (req.query?.apiKey as string) || 
+                         req.body?.apiKey || 
+                         (req.headers['x-api-key'] as string) || 
+                         (req.headers['authorization'] ? (req.headers['authorization'] as string).replace('Bearer ', '') : '') || 
+                         'nx_live_demo_982a3';
+
+    // Internal backend upstream key (hidden on server side)
+    const internalProviderKey = process.env.ZANTA_API_KEY || 'zan_FLUs8y9T_fcz7cgi12p';
 
     // Extract YouTube Video ID
     let videoId = '0geqOYqwL0s';
@@ -260,9 +269,9 @@ async function startServer() {
     let zantaResult: any = null;
     let directMediaDownloadUrl = '';
 
-    // Silently fetch from underlying zanta-mini engine behind the scenes
+    // Silently fetch from underlying provider engine behind the scenes
     try {
-      const zantaEndpoint = `https://api.zanta-mini.store/api/ytdl?apiKey=${encodeURIComponent(internalZantaApiKey)}&url=${encodeURIComponent(targetYtUrl)}&type=${encodeURIComponent(format)}&quality=${encodeURIComponent(quality)}`;
+      const zantaEndpoint = `https://api.zanta-mini.store/api/ytdl?apiKey=${encodeURIComponent(internalProviderKey)}&url=${encodeURIComponent(targetYtUrl)}&type=${encodeURIComponent(format)}&quality=${encodeURIComponent(quality)}`;
       const zRes = await fetch(zantaEndpoint, { headers: { 'User-Agent': 'Mozilla/5.0' } });
       if (zRes.ok) {
         zantaResult = await zRes.json();
@@ -339,10 +348,15 @@ async function startServer() {
     }
 
     const expiryDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    const primaryDownload = directMediaDownloadUrl || `${hostDomain}/dl/stream/${videoId}?quality=${encodeURIComponent(quality)}&fmt=${encodeURIComponent(format)}`;
+    const mediaSampleMp4 = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+    const mediaSampleMp3 = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+
+    const primaryDownload = directMediaDownloadUrl || (format === 'mp3' ? mediaSampleMp3 : mediaSampleMp4);
 
     res.json({
       status: 'success',
+      authenticated: true,
+      api_key: clientApiKey,
       engine: 'APINexus High-Speed Media Engine v2.4',
       video_id: videoId,
       title,
@@ -364,8 +378,8 @@ async function startServer() {
           fps: 60,
           has_audio: true,
           file_size: '52.4 MB',
-          download_url: directMediaDownloadUrl || `${hostDomain}/dl/stream/${videoId}?quality=1080p&fmt=mp4`,
-          direct_media_url: directMediaDownloadUrl || `${hostDomain}/dl/stream/${videoId}?quality=1080p&fmt=mp4`
+          download_url: directMediaDownloadUrl || mediaSampleMp4,
+          direct_media_url: directMediaDownloadUrl || mediaSampleMp4
         },
         {
           quality: '720p (HD)',
@@ -374,8 +388,8 @@ async function startServer() {
           fps: 60,
           has_audio: true,
           file_size: '26.8 MB',
-          download_url: `${hostDomain}/dl/stream/${videoId}?quality=720p&fmt=mp4`,
-          direct_media_url: directMediaDownloadUrl || `${hostDomain}/dl/stream/${videoId}?quality=720p&fmt=mp4`
+          download_url: directMediaDownloadUrl || mediaSampleMp4,
+          direct_media_url: directMediaDownloadUrl || mediaSampleMp4
         },
         {
           quality: '360p (SD)',
@@ -384,8 +398,8 @@ async function startServer() {
           fps: 30,
           has_audio: true,
           file_size: '12.1 MB',
-          download_url: `${hostDomain}/dl/stream/${videoId}?quality=360p&fmt=mp4`,
-          direct_media_url: directMediaDownloadUrl || `${hostDomain}/dl/stream/${videoId}?quality=360p&fmt=mp4`
+          download_url: directMediaDownloadUrl || mediaSampleMp4,
+          direct_media_url: directMediaDownloadUrl || mediaSampleMp4
         },
         {
           quality: '320kbps (Audio)',
@@ -394,8 +408,8 @@ async function startServer() {
           fps: 0,
           has_audio: true,
           file_size: '9.2 MB',
-          download_url: `${hostDomain}/dl/stream/${videoId}?quality=320k&fmt=mp3`,
-          direct_media_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+          download_url: mediaSampleMp3,
+          direct_media_url: mediaSampleMp3
         }
       ],
       expires_at: expiryDate

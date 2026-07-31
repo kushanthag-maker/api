@@ -47,8 +47,8 @@ interface RequestHistoryItem {
 
 export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
   const hostBase = typeof window !== 'undefined' ? window.location.origin : 'https://apinexusdev-blush.vercel.app';
-  const [method, setMethod] = useState<HttpMethod>('POST');
-  const [url, setUrl] = useState<string>(`${hostBase}/api/v1/utility/youtube-download`);
+  const [method, setMethod] = useState<HttpMethod>('GET');
+  const [url, setUrl] = useState<string>(`${hostBase}/api/ytdl?apiKey=nx_live_demo_982a3&url=https%3A%2F%2Fyoutube.com%2Fwatch%3Fv%3D0geqOYqwL0s&type=mp4&quality=360`);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedJson, setCopiedJson] = useState(false);
 
@@ -248,6 +248,53 @@ export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
           
           {/* Method + URL Input Bar */}
           <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+            {/* Quick Endpoint Presets */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-mono">
+              <span className="text-slate-500 font-semibold shrink-0">Presets:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setMethod('GET');
+                  setUrl(`${hostBase}/api/ytdl?apiKey=nx_live_demo_982a3&url=https%3A%2F%2Fyoutube.com%2Fwatch%3Fv%3D0geqOYqwL0s&type=mp4&quality=360`);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shrink-0 cursor-pointer"
+              >
+                GET /api/ytdl
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMethod('POST');
+                  setUrl(`${hostBase}/api/v1/utility/youtube-download`);
+                  setRequestBody(JSON.stringify({ url: 'https://youtube.com/watch?v=0geqOYqwL0s', quality: '1080p', format: 'mp4' }, null, 2));
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shrink-0 cursor-pointer"
+              >
+                POST /api/v1/utility/youtube-download
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMethod('POST');
+                  setUrl(`${hostBase}/api/v1/ai/generate`);
+                  setRequestBody(JSON.stringify({ prompt: 'Explain quantum computing in 2 sentences', model: 'gemini-2.5-flash' }, null, 2));
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shrink-0 cursor-pointer"
+              >
+                POST /api/v1/ai/generate
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMethod('GET');
+                  setUrl(`${hostBase}/nx/demo`);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shrink-0 cursor-pointer"
+              >
+                GET /nx/demo
+              </button>
+            </div>
+
             <div className="flex flex-col sm:flex-row items-stretch gap-2">
               <select
                 value={method}

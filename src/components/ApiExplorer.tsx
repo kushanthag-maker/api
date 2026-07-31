@@ -204,7 +204,35 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
 
   const [copiedUrl, setCopiedUrl] = useState(false);
   const hostBase = typeof window !== 'undefined' ? window.location.origin : 'https://apinexusdev-blush.vercel.app';
-  const fullEndpointUrl = `${hostBase}${selectedEndpoint.path}`;
+  
+  const buildFullQueryUrl = (endpoint: typeof selectedEndpoint, base: string, values: Record<string, string>) => {
+    let urlPath = `${base}${endpoint.path}`;
+    
+    // Replace path parameters like :alias or :videoId
+    endpoint.params.forEach(p => {
+      if (p.location === 'path') {
+        const val = values[p.name] || p.default || '';
+        urlPath = urlPath.replace(`:${p.name}`, encodeURIComponent(val));
+      }
+    });
+
+    const queryParts: string[] = [];
+    endpoint.params.forEach(p => {
+      if (p.location !== 'path') {
+        const val = values[p.name] !== undefined ? values[p.name] : (p.default || '');
+        if (val) {
+          queryParts.push(`${encodeURIComponent(p.name)}=${encodeURIComponent(val)}`);
+        }
+      }
+    });
+
+    if (queryParts.length > 0) {
+      return `${urlPath}?${queryParts.join('&')}`;
+    }
+    return urlPath;
+  };
+
+  const fullEndpointUrl = buildFullQueryUrl(selectedEndpoint, hostBase, paramValues);
 
   const handleCopyUrl = (urlToCopy: string) => {
     navigator.clipboard.writeText(urlToCopy);

@@ -273,6 +273,8 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
     },
     sampleResponseBody: {
       status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_demo_982a3',
       engine: 'APINexus High-Speed Media Engine v2.4',
       video_id: '0geqOYqwL0s',
       title: 'YouTube Ultra HD Trending Video',
@@ -283,7 +285,7 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
       thumbnail: 'https://img.youtube.com/vi/0geqOYqwL0s/maxresdefault.jpg',
       requested_quality: '1080p',
       requested_format: 'mp4',
-      primary_download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/0geqOYqwL0s?quality=1080p&fmt=mp4',
+      primary_download_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
       download_streams: [
         {
           quality: '1080p (Full HD)',
@@ -292,7 +294,8 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
           fps: 60,
           has_audio: true,
           file_size: '52.4 MB',
-          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/0geqOYqwL0s?quality=1080p&fmt=mp4'
+          download_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
         },
         {
           quality: '720p (HD)',
@@ -301,7 +304,8 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
           fps: 60,
           has_audio: true,
           file_size: '26.8 MB',
-          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/0geqOYqwL0s?quality=720p&fmt=mp4'
+          download_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
         },
         {
           quality: '320kbps (Audio)',
@@ -310,10 +314,61 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
           fps: 0,
           has_audio: true,
           file_size: '9.2 MB',
-          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/0geqOYqwL0s?quality=320k&fmt=mp3'
+          download_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+          direct_media_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
         }
       ],
       expires_at: '2026-08-01T14:30:00Z'
+    }
+  },
+  {
+    id: 'util-ytdl-zanta-query',
+    name: 'YouTube Downloader Endpoint (GET)',
+    category: 'utility',
+    method: 'GET',
+    path: '/api/ytdl',
+    summary: 'GET YouTube Downloader API returning direct media download stream links.',
+    description: 'Universal YouTube video downloader API supporting direct URL parameter queries.',
+    rateLimit: '180 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'API Key authentication token.', location: 'query', default: 'nx_live_demo_982a3' },
+      { name: 'url', type: 'string', required: true, description: 'Target YouTube video URL.', location: 'query', default: 'https://youtube.com/watch?v=0geqOYqwL0s' },
+      { name: 'type', type: 'string', required: false, description: 'Media type (mp4 or mp3).', location: 'query', default: 'mp4' },
+      { name: 'quality', type: 'string', required: false, description: 'Target quality (360, 720, 1080).', location: 'query', default: '360' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'nx_live_demo_982a3',
+      url: 'https://youtube.com/watch?v=0geqOYqwL0s',
+      type: 'mp4',
+      quality: '360'
+    },
+    sampleResponseBody: {
+      status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_demo_982a3',
+      engine: 'APINexus High-Speed Media Engine v2.4',
+      video_id: '0geqOYqwL0s',
+      title: 'YouTube Ultra HD Trending Video',
+      channel: 'Official Creator Channel',
+      duration: '03:45',
+      duration_seconds: 225,
+      view_count: '2,400,000',
+      thumbnail: 'https://img.youtube.com/vi/0geqOYqwL0s/maxresdefault.jpg',
+      requested_quality: '360',
+      requested_format: 'mp4',
+      primary_download_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      download_streams: [
+        {
+          quality: '360p (SD)',
+          resolution: '640x360',
+          format: 'mp4',
+          fps: 30,
+          has_audio: true,
+          file_size: '12.1 MB',
+          download_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+        }
+      ]
     }
   }
 ];
