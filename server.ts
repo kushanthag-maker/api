@@ -35,7 +35,7 @@ async function startServer() {
       const ai = getGenAI();
       if (ai) {
         const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
+          model: 'gemini-3.6-flash',
           contents: prompt,
           config: { temperature: Number(temperature) }
         });
