@@ -25,7 +25,7 @@ export const Hero: React.FC<HeroProps> = ({
   onOpenVercelModal,
 }) => {
   const [copied, setCopied] = useState(false);
-  const sampleCurl = `curl -X POST "https://api.nexus.dev/v1/ai/generate" \\
+  const sampleCurl = `curl -X POST "https://apinexusdev-blush.vercel.app/api/v1/ai/generate" \\
   -H "Authorization: Bearer nx_live_demo_982a3" \\
   -H "Content-Type: application/json" \\
   -d '{"prompt": "Hello Nexus API"}'`;

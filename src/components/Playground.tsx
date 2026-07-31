@@ -43,7 +43,7 @@ interface RequestHistoryItem {
 
 export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
   const [method, setMethod] = useState<HttpMethod>('POST');
-  const [url, setUrl] = useState<string>('https://api.nexus.dev/v1/ai/generate');
+  const [url, setUrl] = useState<string>('https://apinexusdev-blush.vercel.app/api/v1/ai/generate');
   const [selectedKey, setSelectedKey] = useState<string>(
     activeKeys.length > 0 ? activeKeys[0].key : 'nx_live_demo_982a3'
   );
@@ -100,15 +100,23 @@ export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
     {
       id: 'h1',
       method: 'POST',
-      url: 'https://api.nexus.dev/v1/ai/generate',
+      url: 'https://apinexusdev-blush.vercel.app/api/v1/utility/youtube-download',
+      status: 200,
+      durationMs: 24,
+      timestamp: '10:45 AM'
+    },
+    {
+      id: 'h2',
+      method: 'POST',
+      url: 'https://apinexusdev-blush.vercel.app/api/v1/ai/generate',
       status: 200,
       durationMs: 16,
       timestamp: '10:42 AM'
     },
     {
-      id: 'h2',
+      id: 'h3',
       method: 'GET',
-      url: 'https://api.nexus.dev/v1/data/fx?base=USD',
+      url: 'https://apinexusdev-blush.vercel.app/api/v1/data/fx?base=USD',
       status: 200,
       durationMs: 12,
       timestamp: '10:38 AM'
@@ -236,7 +244,7 @@ export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 className="flex-1 bg-slate-950 text-white font-mono text-xs px-4 py-3 rounded-xl border border-slate-800 focus:outline-none focus:border-cyan-500"
-                placeholder="https://api.nexus.dev/v1/..."
+                placeholder="https://apinexusdev-blush.vercel.app/api/v1/..."
               />
 
               <button

@@ -198,16 +198,134 @@ async function startServer() {
 
   // 8. Link Shortener (/api/v1/util/shorten)
   app.post('/api/v1/util/shorten', (req, res) => {
-    const { url = 'https://nexus-api.dev', custom_alias } = req.body;
+    const { url = 'https://apinexusdev-blush.vercel.app', custom_alias } = req.body;
     const alias = custom_alias || crypto.randomBytes(3).toString('hex');
     res.json({
-      short_url: `https://nx.link/${alias}`,
+      short_url: `https://apinexusdev-blush.vercel.app/nx/${alias}`,
       original_url: url,
       alias,
       created_at: new Date().toISOString(),
       clicks: 0
     });
   });
+
+  // 9. YouTube Video Downloader API (/api/v1/utility/youtube-download)
+  const handleYoutubeDownload = (req: express.Request, res: express.Response) => {
+    const rawUrl = req.body?.url || (req.query?.url as string) || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+    const quality = req.body?.quality || (req.query?.quality as string) || '1080p';
+    const format = req.body?.format || (req.query?.format as string) || 'mp4';
+
+    // Extract YouTube Video ID
+    let videoId = 'dQw4w9WgXcQ';
+    const match = rawUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    if (match && match[1]) {
+      videoId = match[1];
+    } else if (/^[a-zA-Z0-9_-]{11}$/.test(rawUrl.trim())) {
+      videoId = rawUrl.trim();
+    }
+
+    const hostDomain = 'https://apinexusdev-blush.vercel.app';
+
+    // Dynamic responses for video details
+    const sampleTitles: Record<string, { title: string; channel: string; duration: string; durationSec: number; views: string }> = {
+      'dQw4w9WgXcQ': {
+        title: 'Rick Astley - Never Gonna Give You Up (Official Music Video)',
+        channel: 'Rick Astley',
+        duration: '03:33',
+        durationSec: 213,
+        views: '1,520,400,000'
+      },
+      'kJQP7kiw5Fk': {
+        title: 'Luis Fonsi - Despacito ft. Daddy Yankee',
+        channel: 'Luis Fonsi',
+        duration: '04:41',
+        durationSec: 281,
+        views: '8,300,000,000'
+      },
+      'fJ9rUzIMcZQ': {
+        title: 'Queen – Bohemian Rhapsody (Official Video Remastered)',
+        channel: 'Queen Official',
+        duration: '05:59',
+        durationSec: 359,
+        views: '1,710,000,000'
+      }
+    };
+
+    const details = sampleTitles[videoId] || {
+      title: `YouTube Video (${videoId}) - High Speed HD Stream`,
+      channel: 'Global Media Network',
+      duration: '04:12',
+      durationSec: 252,
+      views: '4,850,000'
+    };
+
+    const expiryDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    res.json({
+      status: 'success',
+      video_id: videoId,
+      title: details.title,
+      channel: details.channel,
+      duration: details.duration,
+      duration_seconds: details.durationSec,
+      view_count: details.views,
+      thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+      requested_quality: quality,
+      requested_format: format,
+      primary_download_url: `${hostDomain}/dl/stream/${videoId}?quality=${encodeURIComponent(quality)}&fmt=${encodeURIComponent(format)}`,
+      download_streams: [
+        {
+          quality: '1080p (Full HD)',
+          resolution: '1920x1080',
+          format: 'mp4',
+          fps: 60,
+          has_audio: true,
+          file_size: '52.4 MB',
+          download_url: `${hostDomain}/dl/stream/${videoId}?quality=1080p&fmt=mp4`
+        },
+        {
+          quality: '720p (HD)',
+          resolution: '1280x720',
+          format: 'mp4',
+          fps: 60,
+          has_audio: true,
+          file_size: '26.8 MB',
+          download_url: `${hostDomain}/dl/stream/${videoId}?quality=720p&fmt=mp4`
+        },
+        {
+          quality: '480p (SD)',
+          resolution: '854x480',
+          format: 'mp4',
+          fps: 30,
+          has_audio: true,
+          file_size: '16.2 MB',
+          download_url: `${hostDomain}/dl/stream/${videoId}?quality=480p&fmt=mp4`
+        },
+        {
+          quality: '360p (SD)',
+          resolution: '640x360',
+          format: 'mp4',
+          fps: 30,
+          has_audio: true,
+          file_size: '12.1 MB',
+          download_url: `${hostDomain}/dl/stream/${videoId}?quality=360p&fmt=mp4`
+        },
+        {
+          quality: '320kbps (Audio)',
+          resolution: 'Audio Only (High Quality)',
+          format: 'mp3',
+          fps: 0,
+          has_audio: true,
+          file_size: '9.2 MB',
+          download_url: `${hostDomain}/dl/stream/${videoId}?quality=320k&fmt=mp3`
+        }
+      ],
+      expires_at: expiryDate
+    });
+  };
+
+  app.post('/api/v1/utility/youtube-download', handleYoutubeDownload);
+  app.get('/api/v1/utility/youtube-download', handleYoutubeDownload);
 
   // --- VITE MIDDLEWARE OR STATIC SERVING ---
   if (process.env.NODE_ENV !== 'production') {

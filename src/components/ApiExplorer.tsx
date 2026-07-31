@@ -201,7 +201,7 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
   // Generate current code snippet string
   const currentSnippetCode = CODE_SNIPPETS[activeCodeLang](
     selectedEndpoint,
-    'https://api.nexus.dev',
+    'https://apinexusdev-blush.vercel.app',
     selectedApiKey,
     paramValues
   );
@@ -366,7 +366,7 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
                 </div>
                 <div className="flex items-center gap-3 mt-2 text-xs font-mono text-slate-400">
                   <span className="text-cyan-400 font-semibold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                    https://api.nexus.dev{selectedEndpoint.path}
+                    https://apinexusdev-blush.vercel.app{selectedEndpoint.path}
                   </span>
                   <span className="text-slate-500">|</span>
                   <span>Rate Limit: {selectedEndpoint.rateLimit}</span>

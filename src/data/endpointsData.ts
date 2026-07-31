@@ -224,10 +224,10 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
       custom_alias: 'vercel-vite-docs'
     },
     sampleResponseBody: {
-      short_url: 'https://nx.link/vercel-vite-docs',
+      short_url: 'https://apinexusdev-blush.vercel.app/nx/vercel-vite-docs',
       original_url: 'https://vercel.com/docs/frameworks/vite',
       alias: 'vercel-vite-docs',
-      qr_code: 'https://api.nexus.dev/v1/util/qrcode?data=https://nx.link/vercel-vite-docs',
+      qr_code: 'https://apinexusdev-blush.vercel.app/api/v1/util/qrcode?data=https://apinexusdev-blush.vercel.app/nx/vercel-vite-docs',
       created_at: '2026-07-31T02:22:19Z',
       clicks: 0
     }
@@ -242,14 +242,85 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
     description: 'Renders crisp QR code matrices with custom brand colors, logo embedding, and error correction levels.',
     rateLimit: '500 req/min',
     params: [
-      { name: 'data', type: 'string', required: true, description: 'Content or URL encoded inside QR.', location: 'query', default: 'https://nexus-api.dev' },
+      { name: 'data', type: 'string', required: true, description: 'Content or URL encoded inside QR.', location: 'query', default: 'https://apinexusdev-blush.vercel.app' },
       { name: 'size', type: 'number', required: false, description: 'Width/Height in pixels (100 to 1000).', location: 'query', default: '250' }
     ],
     sampleResponseBody: {
-      data: 'https://nexus-api.dev',
+      data: 'https://apinexusdev-blush.vercel.app',
       format: 'svg',
       dimensions: '250x250',
       data_url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 250">...</svg>'
+    }
+  },
+  {
+    id: 'util-youtube-download',
+    name: 'YouTube Video Downloader Engine',
+    category: 'utility',
+    method: 'POST',
+    path: '/api/v1/utility/youtube-download',
+    summary: 'Extract video metadata and direct MP4/MP3 download streams for YouTube videos.',
+    description: 'Parses YouTube video URLs, extracts video titles, channels, durations, high-res thumbnails, and returns high-speed stream links for 1080p HD, 720p, 360p, and 320kbps MP3 audio.',
+    rateLimit: '180 req/min',
+    params: [
+      { name: 'url', type: 'string', required: true, description: 'YouTube video URL or Video ID.', location: 'body', default: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+      { name: 'quality', type: 'string', required: false, description: 'Requested stream quality (1080p, 720p, 360p, mp3_320k, auto).', location: 'body', default: '1080p' },
+      { name: 'format', type: 'string', required: false, description: 'Target format (mp4 or mp3).', location: 'body', default: 'mp4' }
+    ],
+    sampleRequestBody: {
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      quality: '1080p',
+      format: 'mp4'
+    },
+    sampleResponseBody: {
+      status: 'success',
+      video_id: 'dQw4w9WgXcQ',
+      title: 'Rick Astley - Never Gonna Give You Up (Official Music Video)',
+      channel: 'Rick Astley',
+      duration: '03:33',
+      duration_seconds: 213,
+      view_count: '1,520,400,000',
+      thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+      requested_quality: '1080p',
+      primary_download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/dQw4w9WgXcQ?quality=1080p&fmt=mp4',
+      download_streams: [
+        {
+          quality: '1080p (Full HD)',
+          resolution: '1920x1080',
+          format: 'mp4',
+          fps: 60,
+          has_audio: true,
+          file_size: '48.2 MB',
+          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/dQw4w9WgXcQ?quality=1080p&fmt=mp4'
+        },
+        {
+          quality: '720p (HD)',
+          resolution: '1280x720',
+          format: 'mp4',
+          fps: 60,
+          has_audio: true,
+          file_size: '24.1 MB',
+          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/dQw4w9WgXcQ?quality=720p&fmt=mp4'
+        },
+        {
+          quality: '360p (SD)',
+          resolution: '640x360',
+          format: 'mp4',
+          fps: 30,
+          has_audio: true,
+          file_size: '11.5 MB',
+          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/dQw4w9WgXcQ?quality=360p&fmt=mp4'
+        },
+        {
+          quality: '320kbps (Audio)',
+          resolution: 'Audio Only',
+          format: 'mp3',
+          fps: 0,
+          has_audio: true,
+          file_size: '8.4 MB',
+          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/dQw4w9WgXcQ?quality=320k&fmt=mp3'
+        }
+      ],
+      expires_at: '2026-07-31T14:30:00Z'
     }
   }
 ];
