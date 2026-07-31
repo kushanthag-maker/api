@@ -46,11 +46,29 @@ interface RequestHistoryItem {
 }
 
 export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
+  const hostBase = typeof window !== 'undefined' ? window.location.origin : 'https://apinexusdev-blush.vercel.app';
   const [method, setMethod] = useState<HttpMethod>('POST');
-  const [url, setUrl] = useState<string>('https://apinexusdev-blush.vercel.app/api/v1/ai/generate');
+  const [url, setUrl] = useState<string>(`${hostBase}/api/v1/utility/youtube-download`);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedJson, setCopiedJson] = useState(false);
+
   const [selectedKey, setSelectedKey] = useState<string>(
     activeKeys.length > 0 ? activeKeys[0].key : 'nx_live_demo_982a3'
   );
+
+  const handleCopyUrl = () => {
+    navigator.clipboard.writeText(url);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2000);
+  };
+
+  const handleCopyResponseJson = () => {
+    if (response?.data) {
+      navigator.clipboard.writeText(JSON.stringify(response.data, null, 2));
+      setCopiedJson(true);
+      setTimeout(() => setCopiedJson(false), 2000);
+    }
+  };
 
   // Headers table
   const [headers, setHeaders] = useState<HeaderRow[]>([
@@ -243,13 +261,24 @@ export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
                 <option value="PATCH">PATCH</option>
               </select>
 
-              <input
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="flex-1 bg-slate-950 text-white font-mono text-xs px-4 py-3 rounded-xl border border-slate-800 focus:outline-none focus:border-cyan-500"
-                placeholder="https://apinexusdev-blush.vercel.app/api/v1/..."
-              />
+              <div className="flex-1 flex items-center bg-slate-950 rounded-xl border border-slate-800 focus-within:border-cyan-500 pr-2">
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="flex-1 bg-transparent text-white font-mono text-xs px-4 py-3 focus:outline-none"
+                  placeholder="https://apinexusdev-blush.vercel.app/api/v1/..."
+                />
+                <button
+                  type="button"
+                  onClick={handleCopyUrl}
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-cyan-400 text-xs font-mono border border-slate-800 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Copy Full Endpoint URL"
+                >
+                  {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span className="hidden sm:inline">{copiedUrl ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
 
               <button
                 onClick={handleSendRequest}
@@ -353,8 +382,8 @@ export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
           {/* Response Viewer Panel */}
           {response && (
             <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <span className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-emerald-400" />
                     <span>Response Output</span>
@@ -370,7 +399,24 @@ export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
                   </span>
                 </div>
 
-                <span className="text-xs font-mono text-slate-500">{response.timestamp}</span>
+                <button
+                  type="button"
+                  onClick={handleCopyResponseJson}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono flex items-center gap-1.5 border border-slate-700 transition-colors cursor-pointer shrink-0"
+                  title="Copy complete JSON payload"
+                >
+                  {copiedJson ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400 font-bold">JSON Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Copy Full JSON</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               <CodeBlock

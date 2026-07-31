@@ -202,10 +202,20 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
     }
   };
 
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const hostBase = typeof window !== 'undefined' ? window.location.origin : 'https://apinexusdev-blush.vercel.app';
+  const fullEndpointUrl = `${hostBase}${selectedEndpoint.path}`;
+
+  const handleCopyUrl = (urlToCopy: string) => {
+    navigator.clipboard.writeText(urlToCopy);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2000);
+  };
+
   // Generate current code snippet string
   const currentSnippetCode = CODE_SNIPPETS[activeCodeLang](
     selectedEndpoint,
-    'https://apinexusdev-blush.vercel.app',
+    hostBase,
     selectedApiKey,
     paramValues
   );
@@ -368,9 +378,16 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
                   </span>
                   <h3 className="text-xl font-bold text-white tracking-tight">{selectedEndpoint.name}</h3>
                 </div>
-                <div className="flex items-center gap-3 mt-2 text-xs font-mono text-slate-400">
-                  <span className="text-cyan-400 font-semibold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                    https://apinexusdev-blush.vercel.app{selectedEndpoint.path}
+                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs font-mono text-slate-400">
+                  <span className="text-cyan-400 font-semibold bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20 flex items-center gap-2">
+                    <span className="break-all">{fullEndpointUrl}</span>
+                    <button
+                      onClick={() => handleCopyUrl(fullEndpointUrl)}
+                      className="text-slate-400 hover:text-cyan-300 transition-colors p-1 cursor-pointer flex-shrink-0"
+                      title="Copy Full Endpoint URL"
+                    >
+                      {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
                   </span>
                   <span className="text-slate-500">|</span>
                   <span>Rate Limit: {selectedEndpoint.rateLimit}</span>

@@ -99,7 +99,7 @@ export default function App() {
   const activeKeys = keys.filter(k => k.status === 'active');
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-200 flex flex-col">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-200 flex flex-col overflow-x-hidden max-w-full w-full">
       
       {/* Header Bar */}
       <Header
