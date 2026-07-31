@@ -19,6 +19,14 @@ async function startServer() {
     return aiClient;
   }
 
+  const shortLinksStore: Record<string, string> = {};
+
+  function getHostDomain(req: express.Request): string {
+    const host = req.headers.host || 'apinexusdev-blush.vercel.app';
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+    return `${protocol}://${host}`;
+  }
+
   // --- API ROUTES ---
 
   // Health check
@@ -198,15 +206,25 @@ async function startServer() {
 
   // 8. Link Shortener (/api/v1/util/shorten)
   app.post('/api/v1/util/shorten', (req, res) => {
-    const { url = 'https://apinexusdev-blush.vercel.app', custom_alias } = req.body;
+    const hostDomain = getHostDomain(req);
+    const { url = hostDomain, custom_alias } = req.body;
     const alias = custom_alias || crypto.randomBytes(3).toString('hex');
+    shortLinksStore[alias] = url;
+
     res.json({
-      short_url: `https://apinexusdev-blush.vercel.app/nx/${alias}`,
+      short_url: `${hostDomain}/nx/${alias}`,
       original_url: url,
       alias,
       created_at: new Date().toISOString(),
       clicks: 0
     });
+  });
+
+  // Short URL Redirect Route (/nx/:alias)
+  app.get('/nx/:alias', (req, res) => {
+    const { alias } = req.params;
+    const targetUrl = shortLinksStore[alias] || getHostDomain(req);
+    res.redirect(targetUrl);
   });
 
   // 9. YouTube Video Downloader API (/api/v1/utility/youtube-download)
@@ -224,7 +242,7 @@ async function startServer() {
       videoId = rawUrl.trim();
     }
 
-    const hostDomain = 'https://apinexusdev-blush.vercel.app';
+    const hostDomain = getHostDomain(req);
 
     // Dynamic responses for video details
     const sampleTitles: Record<string, { title: string; channel: string; duration: string; durationSec: number; views: string }> = {
@@ -270,6 +288,8 @@ async function startServer() {
       duration_seconds: details.durationSec,
       view_count: details.views,
       thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+      youtube_watch_url: `https://www.youtube.com/watch?v=${videoId}`,
+      youtube_embed_url: `https://www.youtube.com/embed/${videoId}`,
       requested_quality: quality,
       requested_format: format,
       primary_download_url: `${hostDomain}/dl/stream/${videoId}?quality=${encodeURIComponent(quality)}&fmt=${encodeURIComponent(format)}`,
@@ -281,7 +301,8 @@ async function startServer() {
           fps: 60,
           has_audio: true,
           file_size: '52.4 MB',
-          download_url: `${hostDomain}/dl/stream/${videoId}?quality=1080p&fmt=mp4`
+          download_url: `${hostDomain}/dl/stream/${videoId}?quality=1080p&fmt=mp4`,
+          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
         },
         {
           quality: '720p (HD)',
@@ -290,7 +311,8 @@ async function startServer() {
           fps: 60,
           has_audio: true,
           file_size: '26.8 MB',
-          download_url: `${hostDomain}/dl/stream/${videoId}?quality=720p&fmt=mp4`
+          download_url: `${hostDomain}/dl/stream/${videoId}?quality=720p&fmt=mp4`,
+          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
         },
         {
           quality: '480p (SD)',
@@ -299,7 +321,8 @@ async function startServer() {
           fps: 30,
           has_audio: true,
           file_size: '16.2 MB',
-          download_url: `${hostDomain}/dl/stream/${videoId}?quality=480p&fmt=mp4`
+          download_url: `${hostDomain}/dl/stream/${videoId}?quality=480p&fmt=mp4`,
+          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
         },
         {
           quality: '360p (SD)',
@@ -308,7 +331,8 @@ async function startServer() {
           fps: 30,
           has_audio: true,
           file_size: '12.1 MB',
-          download_url: `${hostDomain}/dl/stream/${videoId}?quality=360p&fmt=mp4`
+          download_url: `${hostDomain}/dl/stream/${videoId}?quality=360p&fmt=mp4`,
+          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
         },
         {
           quality: '320kbps (Audio)',
@@ -317,7 +341,8 @@ async function startServer() {
           fps: 0,
           has_audio: true,
           file_size: '9.2 MB',
-          download_url: `${hostDomain}/dl/stream/${videoId}?quality=320k&fmt=mp3`
+          download_url: `${hostDomain}/dl/stream/${videoId}?quality=320k&fmt=mp3`,
+          direct_media_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
         }
       ],
       expires_at: expiryDate
@@ -326,6 +351,26 @@ async function startServer() {
 
   app.post('/api/v1/utility/youtube-download', handleYoutubeDownload);
   app.get('/api/v1/utility/youtube-download', handleYoutubeDownload);
+
+  // 10. Direct Stream & Download Route (/dl/stream/:videoId)
+  app.get('/dl/stream/:videoId', (req, res) => {
+    const { videoId } = req.params;
+    const quality = (req.query.quality as string) || '1080p';
+    const fmt = (req.query.fmt as string) || 'mp4';
+    const action = (req.query.action as string) || 'download';
+
+    if (action === 'watch') {
+      return res.redirect(`https://www.youtube.com/watch?v=${videoId}`);
+    }
+
+    const isMp3 = fmt === 'mp3' || quality.includes('320k') || quality.includes('audio');
+    const mediaSampleUrl = isMp3
+      ? 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+      : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+
+    // Direct stream redirect to media CDN asset
+    res.redirect(mediaSampleUrl);
+  });
 
   // --- VITE MIDDLEWARE OR STATIC SERVING ---
   if (process.env.NODE_ENV !== 'production') {

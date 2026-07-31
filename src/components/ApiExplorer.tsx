@@ -25,7 +25,11 @@ import {
   AlertCircle,
   Terminal,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Download,
+  Film,
+  ExternalLink,
+  Music
 } from 'lucide-react';
 
 interface ApiExplorerProps {
@@ -493,6 +497,93 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
                   language="json"
                   title="Response Body (application/json)"
                 />
+
+                {/* Interactive Download Streams Panel if response has download_streams */}
+                {executionResult.data?.download_streams && Array.isArray(executionResult.data.download_streams) && (
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-cyan-500/30 space-y-4 shadow-2xl mt-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
+                      <div className="flex items-center gap-3">
+                        {executionResult.data.thumbnail && (
+                          <div className="relative rounded-lg overflow-hidden w-20 h-12 bg-slate-950 flex-shrink-0 border border-slate-800">
+                            <img src={executionResult.data.thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
+                            <span className="absolute bottom-1 right-1 bg-black/80 text-[9px] font-mono text-cyan-300 px-1 rounded">
+                              {executionResult.data.duration}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="text-sm font-bold text-white line-clamp-1">{executionResult.data.title || 'Extracted YouTube Stream'}</h4>
+                          <p className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                            <span>{executionResult.data.channel}</span>
+                            {executionResult.data.view_count && <span>• {executionResult.data.view_count} views</span>}
+                          </p>
+                        </div>
+                      </div>
+
+                      {executionResult.data.youtube_watch_url && (
+                        <a
+                          href={executionResult.data.youtube_watch_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold border border-rose-500/30 transition-all flex-shrink-0"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Watch Original</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Stream Links List */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                        <span>Direct Download Stream Links</span>
+                        <span className="text-[10px] text-cyan-400">High Speed CDN Stream</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {executionResult.data.download_streams.map((stream: any, idx: number) => {
+                          const isAudio = stream.format === 'mp3' || (stream.quality && stream.quality.includes('Audio'));
+                          const targetStreamUrl = stream.download_url || stream.direct_media_url;
+
+                          return (
+                            <div key={idx} className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-2 hover:border-cyan-500/40 transition-all">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`p-2 rounded-lg ${isAudio ? 'bg-purple-500/10 text-purple-400' : 'bg-cyan-500/10 text-cyan-400'}`}>
+                                  {isAudio ? <Music className="w-4 h-4" /> : <Film className="w-4 h-4" />}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-bold text-slate-200">{stream.quality}</span>
+                                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 uppercase">
+                                      {stream.format}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] font-mono text-slate-400 flex items-center gap-2">
+                                    <span>{stream.resolution}</span>
+                                    <span>•</span>
+                                    <span>{stream.file_size}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <a
+                                  href={targetStreamUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20 transition-all"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>Download</span>
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
