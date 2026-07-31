@@ -46,23 +46,12 @@ export const Hero: React.FC<HeroProps> = ({
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Top Tag & Vercel Badge */}
+        {/* Top Tag */}
         <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
             <span>Nexus Unified API Platform v1.4</span>
           </div>
-
-          <button
-            onClick={onOpenVercelModal}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 text-slate-200 text-xs font-medium transition-all cursor-pointer group"
-          >
-            <svg className="w-3.5 h-3.5 fill-current text-white" viewBox="0 0 24 24">
-              <path d="M24 22.5D12 0 0 22.5h24z" />
-            </svg>
-            <span>Host on Vercel Ready</span>
-            <span className="text-cyan-400 font-bold group-hover:translate-x-0.5 transition-transform">→</span>
-          </button>
         </div>
 
         {/* Main Title & Subtitle */}

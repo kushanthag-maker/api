@@ -76,3 +76,54 @@ export interface PricingPlan {
   features: string[];
   popular?: boolean;
 }
+
+export interface UserProfile {
+  email: string;
+  name: string;
+  avatar: string;
+  googleId: string;
+  isVerifiedGoogleAccount: boolean;
+  role: 'developer' | 'admin' | 'guest';
+  tier: string;
+  isBanned?: boolean;
+  banReason?: string;
+  coinsBalance?: number;
+  activeDataCards?: string[];
+}
+
+export interface PlatformRule {
+  id: string;
+  title: string;
+  description: string;
+  penalty: string;
+}
+
+export interface BanAppeal {
+  email: string;
+  appealText: string;
+  status: 'pending' | 'approved' | 'rejected';
+  messageFromNexusAi?: string;
+}
+
+export interface CoinPackage {
+  id: string;
+  name: string;
+  coins: number;
+  bonusCoins: number;
+  priceUsd: number;
+  popular?: boolean;
+  badge?: string;
+}
+
+export interface DataCard {
+  id: string;
+  title: string;
+  dataAllowance: string;
+  validityDays: number;
+  coinPrice: number;
+  description: string;
+  features: string[];
+  recommendedFor: string;
+  badge?: string;
+}
+

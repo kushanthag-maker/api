@@ -7,8 +7,13 @@ import { KeyManager } from './components/KeyManager';
 import { AnalyticsView } from './components/AnalyticsView';
 import { PricingTiers } from './components/PricingTiers';
 import { VercelDeployModal } from './components/VercelDeployModal';
+import { LoginModal } from './components/LoginModal';
+import { BanAppealModal } from './components/BanAppealModal';
+import { SiteRulesModal } from './components/SiteRulesModal';
+import { NexusAiControlModal } from './components/NexusAiControlModal';
+import { CoinsAndDataCardsModal } from './components/CoinsAndDataCardsModal';
 import { Footer } from './components/Footer';
-import { ApiKey } from './types';
+import { ApiKey, UserProfile } from './types';
 import { 
   Boxes, 
   Zap, 
@@ -55,7 +60,24 @@ const INITIAL_KEYS: ApiKey[] = [
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [vercelModalOpen, setVercelModalOpen] = useState<boolean>(false);
-  const [keysModalOpen, setKeysModalOpen] = useState<boolean>(false);
+  const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
+  const [appealModalOpen, setAppealModalOpen] = useState<boolean>(false);
+  const [rulesModalOpen, setRulesModalOpen] = useState<boolean>(false);
+  const [nexusAiModalOpen, setNexusAiModalOpen] = useState<boolean>(false);
+  const [coinsModalOpen, setCoinsModalOpen] = useState<boolean>(false);
+
+  const [bannedEmailForAppeal, setBannedEmailForAppeal] = useState<string>('');
+  const [bannedReasonForAppeal, setBannedReasonForAppeal] = useState<string>('');
+
+  // User State
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem('nexus_google_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
 
   // Persistent API Keys
   const [keys, setKeys] = useState<ApiKey[]>(() => {
@@ -74,6 +96,18 @@ export default function App() {
       console.error(e);
     }
   }, [keys]);
+
+  useEffect(() => {
+    if (currentUser) {
+      try {
+        localStorage.setItem('nexus_google_user', JSON.stringify(currentUser));
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      localStorage.removeItem('nexus_google_user');
+    }
+  }, [currentUser]);
 
   const handleCreateKey = (keyData: Omit<ApiKey, 'id' | 'createdAt' | 'lastUsed' | 'usageToday'>) => {
     const newKeyItem: ApiKey = {
@@ -96,6 +130,18 @@ export default function App() {
     setKeys(prev => prev.filter(k => k.id !== keyId));
   };
 
+  const handleOpenAppeal = (email?: string, reason?: string) => {
+    setBannedEmailForAppeal(email || '');
+    setBannedReasonForAppeal(reason || 'Platform rule violation.');
+    setAppealModalOpen(true);
+  };
+
+  const handleUpdateUserCoins = (newBalance: number) => {
+    if (currentUser) {
+      setCurrentUser({ ...currentUser, coinsBalance: newBalance });
+    }
+  };
+
   const activeKeys = keys.filter(k => k.status === 'active');
 
   return (
@@ -108,7 +154,15 @@ export default function App() {
         onOpenVercelModal={() => setVercelModalOpen(true)}
         onOpenKeysModal={() => setActiveTab('keys')}
         keyCount={activeKeys.length}
+        currentUser={currentUser}
+        onOpenLoginModal={() => setLoginModalOpen(true)}
+        onLogout={() => setCurrentUser(null)}
+        onOpenNexusAiModal={() => setNexusAiModalOpen(true)}
+        onOpenRulesModal={() => setRulesModalOpen(true)}
+        onOpenCoinsModal={() => setCoinsModalOpen(true)}
+        coinsBalance={currentUser?.coinsBalance ?? 250}
       />
+
 
       {/* Main Content Body */}
       <main className="flex-1">
@@ -228,6 +282,59 @@ export default function App() {
         onClose={() => setVercelModalOpen(false)}
       />
 
+      {/* Google Sign-In Login Modal */}
+      <LoginModal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        onLoginSuccess={(user) => setCurrentUser(user)}
+        onOpenAppeal={(email, reason) => handleOpenAppeal(email, reason)}
+      />
+
+      {/* Unban Appeal Modal evaluated by Nexus AI */}
+      <BanAppealModal
+        isOpen={appealModalOpen}
+        onClose={() => setAppealModalOpen(false)}
+        defaultEmail={bannedEmailForAppeal}
+        defaultReason={bannedReasonForAppeal}
+        onUnbanSuccess={(unbannedEmail) => {
+          if (currentUser && currentUser.email === unbannedEmail) {
+            setCurrentUser({ ...currentUser, isBanned: false });
+          }
+        }}
+      />
+
+      {/* Platform Rules Modal */}
+      <SiteRulesModal
+        isOpen={rulesModalOpen}
+        onClose={() => setRulesModalOpen(false)}
+        onOpenAppeal={() => handleOpenAppeal()}
+      />
+
+      {/* Nexus AI Engine Master Control Modal */}
+      <NexusAiControlModal
+        isOpen={nexusAiModalOpen}
+        onClose={() => setNexusAiModalOpen(false)}
+        onOpenAppeal={() => {
+          setNexusAiModalOpen(false);
+          handleOpenAppeal();
+        }}
+        currentUser={currentUser}
+        onOpenCoinsModal={() => {
+          setNexusAiModalOpen(false);
+          setCoinsModalOpen(true);
+        }}
+        onUpdateUserCoins={handleUpdateUserCoins}
+      />
+
+      {/* Nexus Coins & Data Cards Vault Modal */}
+      <CoinsAndDataCardsModal
+        isOpen={coinsModalOpen}
+        onClose={() => setCoinsModalOpen(false)}
+        currentUser={currentUser}
+        onCoinsUpdated={handleUpdateUserCoins}
+      />
+
     </div>
   );
 }
+

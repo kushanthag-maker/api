@@ -1,12 +1,26 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/nx/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/s/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/dl/(.*)",
+      "destination": "/api"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
 }
+

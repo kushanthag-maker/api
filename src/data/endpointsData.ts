@@ -42,6 +42,70 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
     }
   },
   {
+    id: 'ai-summarize',
+    name: 'Neural Text Summarizer & Key Points',
+    category: 'ai',
+    method: 'POST',
+    path: '/api/v1/ai/summarize',
+    summary: 'Summarize long documents, extract bullet points, and compute reading duration.',
+    description: 'Compress articles, research papers, or customer transcripts into concise summaries and key takeaways using neural LLM models.',
+    rateLimit: '120 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus User API Key.', location: 'body', default: 'nx_live_9a8f23c10b48e71d932e' },
+      { name: 'text', type: 'string', required: true, description: 'Target document or article text to summarize.', location: 'body', default: 'APINexus is a next-generation API management platform offering instant access to high-performance AI tools and web services with sub-20ms latency.' },
+      { name: 'length', type: 'string', required: false, description: 'Summary length: short, medium, or detailed.', location: 'body', default: 'short' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'nx_live_9a8f23c10b48e71d932e',
+      text: 'APINexus is a next-generation API management platform offering instant access to high-performance AI tools and web services with sub-20ms latency.',
+      length: 'short'
+    },
+    sampleResponseBody: {
+      status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_9a8f23c10b48e71d932e',
+      engine: 'Nexus Neural Summarizer v2.1',
+      original_word_count: 24,
+      summary: 'APINexus provides high-speed AI models and web services through a unified API key.',
+      key_takeaways: [
+        'Unified API gateway across AI and developer tools.',
+        'Sub-20ms global edge latency.'
+      ],
+      reading_time_seconds: 8,
+      latency_ms: 32
+    }
+  },
+  {
+    id: 'ai-image-prompt',
+    name: 'AI Diffusion Prompt Architect',
+    category: 'ai',
+    method: 'POST',
+    path: '/api/v1/ai/image-prompt',
+    summary: 'Transform simple ideas into masterwork AI image generation prompts.',
+    description: 'Generates optimized Midjourney, Stable Diffusion, and DALL-E prompts with lighting, camera angles, negative prompts, and style tags.',
+    rateLimit: '150 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus User API Key.', location: 'body', default: 'nx_live_9a8f23c10b48e71d932e' },
+      { name: 'prompt', type: 'string', required: true, description: 'Core creative concept.', location: 'body', default: 'Cyberpunk city at rainy night with neon lights' },
+      { name: 'style', type: 'string', required: false, description: 'Artistic style (photorealistic, anime, 3d-render, oil-painting, surreal).', location: 'body', default: 'photorealistic' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'nx_live_9a8f23c10b48e71d932e',
+      prompt: 'Cyberpunk city at rainy night with neon lights',
+      style: 'photorealistic'
+    },
+    sampleResponseBody: {
+      status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_9a8f23c10b48e71d932e',
+      engine: 'Nexus Diffusion Prompt Architect v4.0',
+      enhanced_prompt: 'Masterpiece, 8K resolution, photorealistic style of Cyberpunk city at rainy night with neon lights, dramatic cinematic lighting, octan render, volumetric fog',
+      negative_prompt: 'blur, low resolution, ugly, distorted, watermark',
+      recommended_aspect_ratio: '16:9',
+      recommended_cfg_scale: 7.5
+    }
+  },
+  {
     id: 'ai-generate',
     name: 'Text Generation Engine',
     category: 'ai',
@@ -191,6 +255,114 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
   },
 
   // Data Category
+  {
+    id: 'data-mock-user',
+    name: 'Random User & Identity Mock Generator',
+    category: 'data',
+    method: 'GET',
+    path: '/api/v1/data/mock-user',
+    summary: 'Generate realistic mock user profiles, avatars, and contact information.',
+    description: 'Generates structured JSON developer seed data containing names, avatars, emails, company roles, phone numbers, and addresses for UI prototyping.',
+    rateLimit: '500 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus User API Key.', location: 'query', default: 'nx_live_9a8f23c10b48e71d932e' },
+      { name: 'count', type: 'integer', required: false, description: 'Number of mock user objects to return (1 to 20).', location: 'query', default: '2' }
+    ],
+    sampleResponseBody: {
+      status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_9a8f23c10b48e71d932e',
+      count: 2,
+      data: [
+        {
+          id: 'usr_89f1a23e',
+          name: 'Kasun Fernando',
+          email: 'kasun.fernando@nexus-test.dev',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=KasunFernando',
+          role: 'Admin Developer',
+          company: 'Nexus Cybernetics LLC',
+          phone: '+1 (555) 019-2834',
+          location: { city: 'Colombo', country: 'Sri Lanka', zip: '10100' }
+        },
+        {
+          id: 'usr_77b312cc',
+          name: 'Elena Vance',
+          email: 'elena.vance@nexus-test.dev',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ElenaVance',
+          role: 'User Member',
+          company: 'Nexus Cybernetics LLC',
+          phone: '+1 (555) 019-2834',
+          location: { city: 'Colombo', country: 'Sri Lanka', zip: '10100' }
+        }
+      ]
+    }
+  },
+  {
+    id: 'web-scrape',
+    name: 'Web Scraper & Metadata Extractor',
+    category: 'data',
+    method: 'POST',
+    path: '/api/v1/web/scrape',
+    summary: 'Extract OpenGraph tags, page titles, H1 headings, favicons, and SSL status.',
+    description: 'Scrapes web pages in headless browser runtime to return social cards, SEO tags, h1 headings, and tech stack detection.',
+    rateLimit: '100 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus User API Key.', location: 'body', default: 'nx_live_9a8f23c10b48e71d932e' },
+      { name: 'url', type: 'string', required: true, description: 'Target website URL to inspect and scrape.', location: 'body', default: 'https://github.com' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'nx_live_9a8f23c10b48e71d932e',
+      url: 'https://github.com'
+    },
+    sampleResponseBody: {
+      status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_9a8f23c10b48e71d932e',
+      engine: 'Nexus Headless Scraper v3.0',
+      url: 'https://github.com',
+      title: 'GitHub: Let’s build from here · GitHub',
+      description: 'GitHub is where over 100 million developers shape the future of software, together.',
+      og_image: 'https://github.githubassets.com/images/modules/site/social-cards/github-social.png',
+      favicon: 'https://github.com/favicon.ico',
+      headers_h1: ['Let’s build from here', 'The AI-powered developer platform'],
+      status_code: 200,
+      ssl_valid: true,
+      technologies_detected: ['React', 'Next.js', 'Tailwind CSS', 'Cloudflare']
+    }
+  },
+  {
+    id: 'net-dns-lookup',
+    name: 'DNS & Network Diagnostics',
+    category: 'auth',
+    method: 'GET',
+    path: '/api/v1/net/dns-lookup',
+    summary: 'Lookup DNS records (A, AAAA, MX, NS, TXT) and verify SSL certificate health.',
+    description: 'Executes high-speed global DNS propagation check and inspects SSL certificate issuer, validity, and expiration.',
+    rateLimit: '300 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus User API Key.', location: 'query', default: 'nx_live_9a8f23c10b48e71d932e' },
+      { name: 'domain', type: 'string', required: true, description: 'Target domain name.', location: 'query', default: 'google.com' }
+    ],
+    sampleResponseBody: {
+      status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_9a8f23c10b48e71d932e',
+      domain: 'google.com',
+      dns_records: {
+        A: ['142.250.190.46', '142.250.190.78'],
+        AAAA: ['2607:f8b0:4004:835::200e'],
+        MX: [{ host: 'smtp.google.com', priority: 10 }],
+        NS: ['ns1.google.com', 'ns2.google.com'],
+        TXT: ['v=spf1 include:_spf.google.com ~all']
+      },
+      ttl: 300,
+      ssl_cert: {
+        valid: true,
+        issuer: 'GTS CA 1C3',
+        expires: '2026-10-31T06:00:00Z'
+      }
+    }
+  },
   {
     id: 'data-fx',
     name: 'Forex Exchange Rates',
@@ -358,6 +530,133 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
         }
       ],
       expires_at: '2026-08-01T14:30:00Z'
+    }
+  },
+  {
+    id: 'util-password-gen',
+    name: 'Secure Password & Token Generator',
+    category: 'utility',
+    method: 'POST',
+    path: '/api/v1/utility/password-generate',
+    summary: 'Generate cryptographically strong passwords, API tokens, and secrets.',
+    description: 'Creates highly secure random passwords or API access tokens with configurable length, entropy score, symbols, and number rules.',
+    rateLimit: '300 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Nexus API Key.', location: 'body', default: 'nx_live_demo_982a3' },
+      { name: 'length', type: 'integer', required: false, description: 'Length of password (6 to 128).', location: 'body', default: '20' },
+      { name: 'symbols', type: 'boolean', required: false, description: 'Include special symbols.', location: 'body', default: 'true' },
+      { name: 'numbers', type: 'boolean', required: false, description: 'Include numbers.', location: 'body', default: 'true' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'nx_live_demo_982a3',
+      length: 20,
+      symbols: true,
+      numbers: true
+    },
+    sampleResponseBody: {
+      status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_demo_982a3',
+      engine: 'Nexus Cryptographic Key Generator v1.2',
+      password: 'k#9$mP2!xL8@qW5*vN1$',
+      length: 20,
+      entropy_bits: 130,
+      strength: 'Very Strong',
+      includes_symbols: true,
+      includes_numbers: true,
+      bearer_token_sample: 'nx_tk_a8f9c10b4d2e5f8a9b0c1d2e'
+    }
+  },
+  {
+    id: 'util-json-format',
+    name: 'JSON Formatter & Validator',
+    category: 'utility',
+    method: 'POST',
+    path: '/api/v1/utility/json-format',
+    summary: 'Validate, format/prettify, and minify raw JSON payload strings.',
+    description: 'Parses raw JSON strings, validates syntax, calculates byte sizes, and returns prettified or minified JSON outputs.',
+    rateLimit: '400 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Nexus API Key.', location: 'body', default: 'nx_live_demo_982a3' },
+      { name: 'json', type: 'string', required: true, description: 'Raw JSON string to validate and format.', location: 'body', default: '{"app":"APINexus","version":"2.4","active":true}' },
+      { name: 'indent', type: 'integer', required: false, description: 'Indentation spacing (1-8).', location: 'body', default: '2' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'nx_live_demo_982a3',
+      json: '{"app":"APINexus","version":"2.4","active":true}',
+      indent: 2
+    },
+    sampleResponseBody: {
+      status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_demo_982a3',
+      is_valid: true,
+      formatted_json: '{\n  "app": "APINexus",\n  "version": "2.4",\n  "active": true\n}',
+      minified_json: '{"app":"APINexus","version":"2.4","active":true}',
+      size_bytes: 52,
+      keys_count: 3
+    }
+  },
+  {
+    id: 'util-md-to-html',
+    name: 'Markdown to HTML Transpiler',
+    category: 'utility',
+    method: 'POST',
+    path: '/api/v1/utility/md-to-html',
+    summary: 'Convert raw Markdown content into sanitized HTML with reading stats.',
+    description: 'Converts Markdown formatting (headers, lists, bold text, code blocks) into clean HTML with word counts and reading duration.',
+    rateLimit: '300 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Nexus API Key.', location: 'body', default: 'nx_live_demo_982a3' },
+      { name: 'markdown', type: 'string', required: true, description: 'Raw Markdown string.', location: 'body', default: '# APINexus Platform\n\nWelcome to the **next-generation** developer API gateway.' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'nx_live_demo_982a3',
+      markdown: '# APINexus Platform\n\nWelcome to the **next-generation** developer API gateway.'
+    },
+    sampleResponseBody: {
+      status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_demo_982a3',
+      engine: 'Nexus Markdown Transpiler v1.0',
+      html: '<h1>APINexus Platform</h1><br/><br/>Welcome to the <strong>next-generation</strong> developer API gateway.',
+      word_count: 9,
+      estimated_reading_time_sec: 3
+    }
+  },
+  {
+    id: 'web-audit',
+    name: 'Website SEO & Speed Auditor',
+    category: 'data',
+    method: 'POST',
+    path: '/api/v1/web/audit',
+    summary: 'Audit website URLs for SEO scores, SSL status, speed estimates, and meta tags.',
+    description: 'Analyzes target domain or web page URL for technical SEO health, responsiveness, HTTP headers, and actionable optimization tips.',
+    rateLimit: '150 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Nexus API Key.', location: 'body', default: 'nx_live_demo_982a3' },
+      { name: 'url', type: 'string', required: true, description: 'Target website URL.', location: 'body', default: 'https://apinexus.dev' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'nx_live_demo_982a3',
+      url: 'https://apinexus.dev'
+    },
+    sampleResponseBody: {
+      status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_demo_982a3',
+      target_url: 'https://apinexus.dev',
+      audit_timestamp: '2026-07-31T07:22:00Z',
+      overall_seo_score: 96,
+      performance_score: 98,
+      security_score: 94,
+      checks: {
+        ssl_enabled: true,
+        meta_description_present: true,
+        open_graph_tags: true,
+        viewport_responsive: true
+      },
+      page_load_estimate_ms: 180
     }
   },
   {
