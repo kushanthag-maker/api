@@ -125,39 +125,45 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
     const startTime = performance.now();
 
     try {
-      // Attempt live fetch to our endpoint or construct response
-      let responseData = selectedEndpoint.sampleResponseBody;
+      let responseData: any = selectedEndpoint.sampleResponseBody;
       let status = 200;
       let statusText = 'OK';
 
-      // Perform real or simulated API proxy call
       if (selectedEndpoint.method === 'POST') {
+        const payload = {
+          apiKey: selectedApiKey,
+          ...paramValues
+        };
         const res = await fetch(selectedEndpoint.path, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-api-key': selectedApiKey,
             'Authorization': `Bearer ${selectedApiKey}`
           },
-          body: JSON.stringify(paramValues)
+          body: JSON.stringify(payload)
         });
-        if (res.ok) {
-          responseData = await res.json();
-          status = res.status;
-          statusText = res.statusText;
-        }
+        
+        responseData = await res.json();
+        status = res.status;
+        statusText = res.statusText;
       } else if (selectedEndpoint.method === 'GET') {
-        const queryParams = new URLSearchParams(paramValues).toString();
+        const paramsToSend = {
+          apiKey: selectedApiKey,
+          ...paramValues
+        };
+        const queryParams = new URLSearchParams(paramsToSend).toString();
         const url = queryParams ? `${selectedEndpoint.path}?${queryParams}` : selectedEndpoint.path;
         const res = await fetch(url, {
           headers: {
+            'x-api-key': selectedApiKey,
             'Authorization': `Bearer ${selectedApiKey}`
           }
         });
-        if (res.ok) {
-          responseData = await res.json();
-          status = res.status;
-          statusText = res.statusText;
-        }
+        
+        responseData = await res.json();
+        status = res.status;
+        statusText = res.statusText;
       }
 
       const duration = Math.round(performance.now() - startTime);
@@ -165,35 +171,27 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
       setExecutionResult({
         status,
         statusText,
-        durationMs: duration > 0 ? duration : 16,
+        durationMs: duration > 0 ? duration : 18,
         headers: {
           'content-type': 'application/json; charset=utf-8',
           'x-nexus-request-id': `req_${Math.random().toString(36).substring(2, 10)}`,
-          'x-nexus-rate-limit-remaining': '984',
           'x-nexus-region': 'us-east-1-edge'
         },
         data: responseData,
         timestamp: new Date().toLocaleTimeString()
       });
     } catch (err) {
-      // Fallback response generator for smooth UI preview
       const duration = Math.round(performance.now() - startTime);
       setExecutionResult({
-        status: 200,
-        statusText: 'OK (Mock Proxy)',
-        durationMs: duration + 18,
+        status: 400,
+        statusText: 'Bad Request',
+        durationMs: duration + 10,
         headers: {
-          'content-type': 'application/json',
-          'x-nexus-mock-mode': 'true',
-          'x-nexus-region': 'us-east-1-edge'
+          'content-type': 'application/json'
         },
         data: {
-          ...selectedEndpoint.sampleResponseBody,
-          _execution_meta: {
-            executed_at: new Date().toISOString(),
-            input_params: paramValues,
-            key_used: selectedApiKey.substring(0, 12) + '...'
-          }
+          status: 'error',
+          message: (err as Error).message || 'Failed to execute API request'
         },
         timestamp: new Date().toLocaleTimeString()
       });

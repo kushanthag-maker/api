@@ -167,40 +167,66 @@ export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
     const startTime = performance.now();
 
     try {
-      let parsedBody = {};
+      let parsedBody: any = {};
       try {
         if (requestBody.trim()) {
           parsedBody = JSON.parse(requestBody);
         }
       } catch (e) {
-        // Invalid JSON body fallback
+        // Raw text body or empty
       }
 
-      // Execute request or simulated proxy
-      await new Promise(r => setTimeout(r, 220 + Math.random() * 150));
+      const reqHeaders: Record<string, string> = {
+        'x-api-key': selectedKey,
+        'Authorization': `Bearer ${selectedKey}`
+      };
+      headers.filter(h => h.enabled && h.key).forEach(h => {
+        reqHeaders[h.key] = h.value;
+      });
+
+      let res: Response;
+      let targetUrl = url;
+
+      if (method === 'GET') {
+        if (!targetUrl.includes('apiKey=') && !targetUrl.includes('key=')) {
+          const sep = targetUrl.includes('?') ? '&' : '?';
+          targetUrl = `${targetUrl}${sep}apiKey=${encodeURIComponent(selectedKey)}`;
+        }
+        res = await fetch(targetUrl, { headers: reqHeaders });
+      } else {
+        if (!reqHeaders['Content-Type'] && !reqHeaders['content-type']) {
+          reqHeaders['Content-Type'] = 'application/json';
+        }
+        let bodyObj = parsedBody;
+        if (typeof bodyObj === 'object' && bodyObj !== null && !Array.isArray(bodyObj) && !('apiKey' in bodyObj)) {
+          bodyObj = { apiKey: selectedKey, ...bodyObj };
+        }
+        res = await fetch(targetUrl, {
+          method,
+          headers: reqHeaders,
+          body: JSON.stringify(bodyObj)
+        });
+      }
+
+      let responseData: any;
+      try {
+        responseData = await res.json();
+      } catch (e) {
+        responseData = { status: 'completed', text: await res.text() };
+      }
+
       const duration = Math.round(performance.now() - startTime);
 
       const newResp: ApiResponseResult = {
-        status: 200,
-        statusText: 'OK',
-        durationMs: duration,
+        status: res.status,
+        statusText: res.statusText,
+        durationMs: duration > 0 ? duration : 18,
         headers: {
           'content-type': 'application/json',
           'x-nexus-request-id': `req_${Math.random().toString(36).substring(2, 9)}`,
           'x-nexus-region': 'us-east-1-edge'
         },
-        data: {
-          success: true,
-          method,
-          url,
-          timestamp: new Date().toISOString(),
-          request_payload: parsedBody,
-          response: {
-            message: 'Nexus API execution succeeded.',
-            status: 'operational',
-            echo_key: selectedKey.substring(0, 10) + '...'
-          }
-        },
+        data: responseData,
         timestamp: new Date().toLocaleTimeString()
       };
 
@@ -211,15 +237,26 @@ export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
         {
           id: Date.now().toString(),
           method,
-          url,
-          status: 200,
+          url: targetUrl,
+          status: res.status,
           durationMs: duration,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         },
         ...prev.slice(0, 9)
       ]);
     } catch (err) {
-      console.error(err);
+      const duration = Math.round(performance.now() - startTime);
+      setResponse({
+        status: 400,
+        statusText: 'Request Error',
+        durationMs: duration,
+        headers: { 'content-type': 'application/json' },
+        data: {
+          status: 'error',
+          message: (err as Error).message || 'Failed to execute request'
+        },
+        timestamp: new Date().toLocaleTimeString()
+      });
     } finally {
       setIsSending(false);
     }

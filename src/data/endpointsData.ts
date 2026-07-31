@@ -3,6 +3,45 @@ import { ApiEndpoint } from '../types';
 export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
   // AI Category
   {
+    id: 'ai-code-generate',
+    name: 'Powerful Code Generation Engine',
+    category: 'ai',
+    method: 'POST',
+    path: '/api/v1/code/generate',
+    summary: 'Generate high-performance, production-ready code in any language (up to 2000 lines max).',
+    description: 'Generates complete, bug-free, well-structured runnable source code for microservices, algorithms, React UI, APIs, or database scripts up to 2000 lines.',
+    rateLimit: '100 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus User API Key credential.', location: 'body', default: 'nx_live_9a8f23c10b48e71d932e' },
+      { name: 'prompt', type: 'string', required: true, description: 'Detailed prompt specifying the software feature, API, or algorithm to code.', location: 'body', default: 'Create a full-stack REST API server with TypeScript, Express, and JWT Auth' },
+      { name: 'language', type: 'string', required: false, description: 'Target language (typescript, python, javascript, react, golang, rust, cpp, java, php, csharp, etc.).', location: 'body', default: 'typescript' },
+      { name: 'framework', type: 'string', required: false, description: 'Target framework (Express, FastAPI, React, Next.js, Django, Spring Boot, etc.).', location: 'body', default: 'Express' },
+      { name: 'maxLines', type: 'integer', required: false, description: 'Line limit parameter budget (up to 2000 lines limit).', location: 'body', default: '1000' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'nx_live_9a8f23c10b48e71d932e',
+      prompt: 'Create a full-stack REST API server with TypeScript, Express, and JWT Auth',
+      language: 'typescript',
+      framework: 'Express',
+      maxLines: 1000
+    },
+    sampleResponseBody: {
+      status: 'success',
+      authenticated: true,
+      api_key: 'nx_live_9a8f23c10b48e71d932e',
+      engine: 'Nexus Powerful Code Synthesis Engine v3.2 (Gemini Powered)',
+      prompt: 'Create a full-stack REST API server with TypeScript, Express, and JWT Auth',
+      language: 'typescript',
+      framework: 'Express',
+      max_lines_limit: 2000,
+      generated_lines_count: 148,
+      code: `import express, { Request, Response, NextFunction } from 'express';\nimport jwt from 'jsonwebtoken';\nimport crypto from 'crypto';\n\nconst app = express();\napp.use(express.json());\nconst JWT_SECRET = process.env.JWT_SECRET || 'super_secret_jwt_key_99';\n\n// JWT Authentication Middleware\nfunction authenticateToken(req: Request, res: Response, next: NextFunction) {\n  const authHeader = req.headers['authorization'];\n  const token = authHeader && authHeader.split(' ')[1];\n  if (!token) return res.status(401).json({ error: 'Access token required' });\n\n  jwt.verify(token, JWT_SECRET, (err, user) => {\n    if (err) return res.status(403).json({ error: 'Invalid or expired token' });\n    (req as any).user = user;\n    next();\n  });\n}\n\n// Protected Resource Endpoint\napp.get('/api/protected/data', authenticateToken, (req: Request, res: Response) => {\n  res.json({\n    status: 'success',\n    message: 'Access granted to secure microservice endpoint.',\n    user: (req as any).user,\n    timestamp: new Date().toISOString()\n  });\n});\n\napp.listen(3000, () => console.log('REST API Server running on port 3000'));`,
+      execution_guide: 'Save code to index.ts and execute with npx tsx index.ts.',
+      latency_ms: 124,
+      created_at: '2026-07-31T06:42:00Z'
+    }
+  },
+  {
     id: 'ai-generate',
     name: 'Text Generation Engine',
     category: 'ai',
@@ -285,7 +324,7 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
       thumbnail: 'https://img.youtube.com/vi/0geqOYqwL0s/maxresdefault.jpg',
       requested_quality: '1080p',
       requested_format: 'mp4',
-      primary_download_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      primary_download_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
       download_streams: [
         {
           quality: '1080p (Full HD)',
@@ -294,8 +333,8 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
           fps: 60,
           has_audio: true,
           file_size: '52.4 MB',
-          download_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+          download_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+          direct_media_url: 'https://www.w3schools.com/html/mov_bbb.mp4'
         },
         {
           quality: '720p (HD)',
@@ -304,8 +343,8 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
           fps: 60,
           has_audio: true,
           file_size: '26.8 MB',
-          download_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+          download_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+          direct_media_url: 'https://www.w3schools.com/html/mov_bbb.mp4'
         },
         {
           quality: '320kbps (Audio)',
@@ -356,7 +395,7 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
       thumbnail: 'https://img.youtube.com/vi/0geqOYqwL0s/maxresdefault.jpg',
       requested_quality: '360',
       requested_format: 'mp4',
-      primary_download_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      primary_download_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
       download_streams: [
         {
           quality: '360p (SD)',
@@ -365,8 +404,8 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
           fps: 30,
           has_audio: true,
           file_size: '12.1 MB',
-          download_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+          download_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+          direct_media_url: 'https://www.w3schools.com/html/mov_bbb.mp4'
         }
       ]
     }
