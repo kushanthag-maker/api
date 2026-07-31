@@ -1,0 +1,400 @@
+import { ApiEndpoint } from '../types';
+
+export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
+  // AI Category
+  {
+    id: 'ai-generate',
+    name: 'Text Generation Engine',
+    category: 'ai',
+    method: 'POST',
+    path: '/api/v1/ai/generate',
+    summary: 'Generate high-quality text, creative copy, or structured JSON using Nexus AI.',
+    description: 'Powers conversational agents, content creation, code synthesis, and structured JSON responses with low-latency edge inference.',
+    rateLimit: '120 req/min',
+    params: [
+      { name: 'prompt', type: 'string', required: true, description: 'The context or instructions for generation.', location: 'body', default: 'Write a quick 2-line intro for Nexus API platform' },
+      { name: 'temperature', type: 'number', required: false, description: 'Sampling creativity (0.0 to 1.0).', location: 'body', default: '0.7' },
+      { name: 'max_tokens', type: 'integer', required: false, description: 'Maximum tokens to yield.', location: 'body', default: '256' },
+      { name: 'format', type: 'string', required: false, description: 'Output mode: text or json.', location: 'body', default: 'json' }
+    ],
+    sampleRequestBody: {
+      prompt: 'Write a quick 2-line intro for Nexus API platform',
+      temperature: 0.7,
+      max_tokens: 256,
+      format: 'json'
+    },
+    sampleResponseBody: {
+      id: 'nx_gen_88f12a3d',
+      object: 'chat.completion',
+      created: 1785462000,
+      model: 'nexus-ai-flash-v2',
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: 'assistant',
+            content: 'Nexus API is a unified developer gateway connecting high-performance AI, security, and realtime telemetry tools. Built for high scalability, sub-20ms latency, and global edge deployments.'
+          },
+          finish_reason: 'stop'
+        }
+      ],
+      usage: {
+        prompt_tokens: 14,
+        completion_tokens: 38,
+        total_tokens: 52
+      },
+      latency_ms: 18
+    }
+  },
+  {
+    id: 'ai-sentiment',
+    name: 'Realtime Sentiment & Tone',
+    category: 'ai',
+    method: 'POST',
+    path: '/api/v1/ai/sentiment',
+    summary: 'Analyze text sentiment, emotional tone, and intent with confidence scores.',
+    description: 'Extract positive/negative sentiment, toxicity indicators, customer satisfaction score, and key topics instantly.',
+    rateLimit: '200 req/min',
+    params: [
+      { name: 'text', type: 'string', required: true, description: 'Input string to analyze.', location: 'body', default: 'Nexus API documentation is super intuitive and fast!' }
+    ],
+    sampleRequestBody: {
+      text: 'Nexus API documentation is super intuitive and fast!'
+    },
+    sampleResponseBody: {
+      status: 'success',
+      sentiment: 'positive',
+      score: 0.962,
+      emotions: {
+        joy: 0.91,
+        trust: 0.88,
+        anticipation: 0.65
+      },
+      topics: ['documentation', 'performance', 'developer experience'],
+      language: 'en'
+    }
+  },
+  {
+    id: 'ai-translate',
+    name: 'Neural Translation',
+    category: 'ai',
+    method: 'POST',
+    path: '/api/v1/ai/translate',
+    summary: 'High-accuracy neural translation supporting over 100 languages.',
+    description: 'Translates sentences or documents with context preservation, auto-detecting the input language.',
+    rateLimit: '150 req/min',
+    params: [
+      { name: 'text', type: 'string', required: true, description: 'Text to translate.', location: 'body', default: 'Welcome to Nexus API Developer Portal' },
+      { name: 'target_lang', type: 'string', required: true, description: 'ISO language code (e.g., es, fr, de, si, ja, zh).', location: 'body', default: 'si' }
+    ],
+    sampleRequestBody: {
+      text: 'Welcome to Nexus API Developer Portal',
+      target_lang: 'si'
+    },
+    sampleResponseBody: {
+      source_lang: 'en',
+      target_lang: 'si',
+      original_text: 'Welcome to Nexus API Developer Portal',
+      translated_text: 'නෙක්සස් ඒපීඅයි සංවර්ධක ද්වාරය වෙත සාදරයෙන් පිළිගනිමු',
+      confidence: 0.99
+    }
+  },
+
+  // Auth Category
+  {
+    id: 'auth-hash',
+    name: 'Argon2 / Crypto Hashing',
+    category: 'auth',
+    method: 'POST',
+    path: '/api/v1/auth/hash',
+    summary: 'Cryptographic hash generation for passwords, API secrets, and tokens.',
+    description: 'Generates secure standard hashes using SHA-256, HMAC, or Argon2id with automatic salt generation.',
+    rateLimit: '500 req/min',
+    params: [
+      { name: 'data', type: 'string', required: true, description: 'Raw payload or password.', location: 'body', default: 'MySuperSecretPass123!' },
+      { name: 'algorithm', type: 'string', required: false, description: 'sha256, hmac, or argon2id.', location: 'body', default: 'argon2id' }
+    ],
+    sampleRequestBody: {
+      data: 'MySuperSecretPass123!',
+      algorithm: 'argon2id'
+    },
+    sampleResponseBody: {
+      algorithm: 'argon2id',
+      hash: '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$Jk5s2X9pQz3xYw7v8u9t0s1r2q3p4o5n6m7l8k9j0i1',
+      salt: 'c29tZXNhbHQ',
+      timestamp: '2026-07-31T02:22:19Z'
+    }
+  },
+  {
+    id: 'auth-ip-intel',
+    name: 'IP Threat Intelligence',
+    category: 'auth',
+    method: 'GET',
+    path: '/api/v1/auth/ip-intel',
+    summary: 'Evaluate IP reputation, proxy detection, VPN flags, and risk score.',
+    description: 'Guards your applications against malicious bots, credential stuffing, and fraud with real-time IP threat scoring.',
+    rateLimit: '300 req/min',
+    params: [
+      { name: 'ip', type: 'string', required: true, description: 'IPv4 or IPv6 address to lookup.', location: 'query', default: '8.8.8.8' }
+    ],
+    sampleResponseBody: {
+      ip: '8.8.8.8',
+      risk_score: 2,
+      is_vpn: false,
+      is_proxy: false,
+      is_tor: false,
+      is_datacenter: true,
+      isp: 'Google LLC',
+      country: 'United States',
+      city: 'Mountain View',
+      threat_level: 'low'
+    }
+  },
+
+  // Data Category
+  {
+    id: 'data-fx',
+    name: 'Forex Exchange Rates',
+    category: 'data',
+    method: 'GET',
+    path: '/api/v1/data/fx',
+    summary: 'Live FX currency exchange rates updated every 60 seconds.',
+    description: 'Provides spot rates and historical currency trends for over 160 fiat currencies and top cryptocurrencies.',
+    rateLimit: '600 req/min',
+    params: [
+      { name: 'base', type: 'string', required: false, description: 'Base currency symbol (e.g. USD, EUR, LKR, JPY).', location: 'query', default: 'USD' },
+      { name: 'symbols', type: 'string', required: false, description: 'Comma separated list of target symbols.', location: 'query', default: 'EUR,GBP,JPY,LKR,BTC' }
+    ],
+    sampleResponseBody: {
+      base: 'USD',
+      date: '2026-07-31',
+      rates: {
+        EUR: 0.918,
+        GBP: 0.782,
+        JPY: 154.2,
+        LKR: 302.5,
+        BTC: 0.0000104
+      },
+      updated_at: '2026-07-31T02:20:00Z'
+    }
+  },
+  {
+    id: 'data-weather',
+    name: 'Climate Sync Weather',
+    category: 'data',
+    method: 'GET',
+    path: '/api/v1/data/weather',
+    summary: 'Real-time weather observation, UV index, and 7-day micro-forecast.',
+    description: 'Hyper-local weather telemetry by city name or GPS coordinates.',
+    rateLimit: '400 req/min',
+    params: [
+      { name: 'city', type: 'string', required: true, description: 'City name or lat,long string.', location: 'query', default: 'Colombo' }
+    ],
+    sampleResponseBody: {
+      location: 'Colombo, Sri Lanka',
+      coordinates: { lat: 6.9271, lon: 79.8612 },
+      current: {
+        temp_c: 29.5,
+        feels_like_c: 33.2,
+        humidity_percent: 78,
+        condition: 'Partly Cloudy',
+        wind_kmh: 14.5,
+        uv_index: 8.4
+      },
+      air_quality_index: 42
+    }
+  },
+
+  // Utility Category
+  {
+    id: 'util-shorten',
+    name: 'URL Compression & Analytics',
+    category: 'utility',
+    method: 'POST',
+    path: '/api/v1/util/shorten',
+    summary: 'Shorten long URLs with custom aliases, expiration times, and click tracking.',
+    description: 'Creates high-speed short links hosted on edge nodes with instant redirection and geolocation analytics.',
+    rateLimit: '300 req/min',
+    params: [
+      { name: 'url', type: 'string', required: true, description: 'Destination URL to shorten.', location: 'body', default: 'https://vercel.com/docs/frameworks/vite' },
+      { name: 'custom_alias', type: 'string', required: false, description: 'Optional vanity slug.', location: 'body', default: 'vercel-vite-docs' }
+    ],
+    sampleRequestBody: {
+      url: 'https://vercel.com/docs/frameworks/vite',
+      custom_alias: 'vercel-vite-docs'
+    },
+    sampleResponseBody: {
+      short_url: 'https://nx.link/vercel-vite-docs',
+      original_url: 'https://vercel.com/docs/frameworks/vite',
+      alias: 'vercel-vite-docs',
+      qr_code: 'https://api.nexus.dev/v1/util/qrcode?data=https://nx.link/vercel-vite-docs',
+      created_at: '2026-07-31T02:22:19Z',
+      clicks: 0
+    }
+  },
+  {
+    id: 'util-qrcode',
+    name: 'Matrix Vector QR Code',
+    category: 'utility',
+    method: 'GET',
+    path: '/api/v1/util/qrcode',
+    summary: 'Generate customizable SVG, PNG, or DataURL QR codes on demand.',
+    description: 'Renders crisp QR code matrices with custom brand colors, logo embedding, and error correction levels.',
+    rateLimit: '500 req/min',
+    params: [
+      { name: 'data', type: 'string', required: true, description: 'Content or URL encoded inside QR.', location: 'query', default: 'https://nexus-api.dev' },
+      { name: 'size', type: 'number', required: false, description: 'Width/Height in pixels (100 to 1000).', location: 'query', default: '250' }
+    ],
+    sampleResponseBody: {
+      data: 'https://nexus-api.dev',
+      format: 'svg',
+      dimensions: '250x250',
+      data_url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 250">...</svg>'
+    }
+  }
+];
+
+export const CODE_SNIPPETS = {
+  curl: (endpoint: ApiEndpoint, baseUrl: string, key: string, params: Record<string, any>) => {
+    if (endpoint.method === 'GET') {
+      const queryStr = Object.entries(params)
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .join('&');
+      const fullPath = queryStr ? `${endpoint.path}?${queryStr}` : endpoint.path;
+      return `curl -X GET "${baseUrl}${fullPath}" \\
+  -H "Authorization: Bearer ${key || 'YOUR_NEXUS_API_KEY'}" \\
+  -H "Accept: application/json"`;
+    }
+    return `curl -X ${endpoint.method} "${baseUrl}${endpoint.path}" \\
+  -H "Authorization: Bearer ${key || 'YOUR_NEXUS_API_KEY'}" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(params, null, 2)}'`;
+  },
+
+  javascript: (endpoint: ApiEndpoint, baseUrl: string, key: string, params: Record<string, any>) => {
+    if (endpoint.method === 'GET') {
+      const queryStr = new URLSearchParams(params).toString();
+      const url = queryStr ? `${endpoint.path}?${queryStr}` : endpoint.path;
+      return `// Using Fetch API
+const response = await fetch('${baseUrl}${url}', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer ${key || 'YOUR_NEXUS_API_KEY'}',
+    'Accept': 'application/json'
+  }
+});
+
+const data = await response.json();
+console.log(data);`;
+    }
+    return `// Using Fetch API
+const response = await fetch('${baseUrl}${endpoint.path}', {
+  method: '${endpoint.method}',
+  headers: {
+    'Authorization': 'Bearer ${key || 'YOUR_NEXUS_API_KEY'}',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(${JSON.stringify(params, null, 2)})
+});
+
+const data = await response.json();
+console.log(data);`;
+  },
+
+  python: (endpoint: ApiEndpoint, baseUrl: string, key: string, params: Record<string, any>) => {
+    if (endpoint.method === 'GET') {
+      return `import requests
+
+url = "${baseUrl}${endpoint.path}"
+headers = {
+    "Authorization": "Bearer ${key || 'YOUR_NEXUS_API_KEY'}",
+    "Accept": "application/json"
+}
+params = ${JSON.stringify(params, null, 4).replace(/true/g, 'True').replace(/false/g, 'False')}
+
+response = requests.get(url, headers=headers, params=params)
+print(response.json())`;
+    }
+    return `import requests
+
+url = "${baseUrl}${endpoint.path}"
+headers = {
+    "Authorization": "Bearer ${key || 'YOUR_NEXUS_API_KEY'}",
+    "Content-Type": "application/json"
+}
+payload = ${JSON.stringify(params, null, 4).replace(/true/g, 'True').replace(/false/g, 'False')}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.json())`;
+  },
+
+  go: (endpoint: ApiEndpoint, baseUrl: string, key: string, params: Record<string, any>) => {
+    return `package main
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+)
+
+func main() {
+	url := "${baseUrl}${endpoint.path}"
+	payload := strings.NewReader(\`${JSON.stringify(params, null, 2)}\`)
+
+	req, _ := http.NewRequest("${endpoint.method}", url, payload)
+	req.Header.Add("Authorization", "Bearer ${key || "YOUR_NEXUS_API_KEY"}")
+	req.Header.Add("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, _ := io.ReadAll(res.Body)
+	fmt.Println(string(body))
+}`;
+  },
+
+  rust: (endpoint: ApiEndpoint, baseUrl: string, key: string, params: Record<string, any>) => {
+    return `use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std.error::Error>> {
+    let client = reqwest::Client::new();
+    let res = client
+        .${endpoint.method.toLowerCase()}("${baseUrl}${endpoint.path}")
+        .header(AUTHORIZATION, "Bearer ${key || 'YOUR_NEXUS_API_KEY'}")
+        .header(CONTENT_TYPE, "application/json")
+        .json(&serde_json::json!(${JSON.stringify(params)}))
+        .send()
+        .await?;
+
+    let body = res.text().await?;
+    println!("{}", body);
+    Ok(())
+}`;
+  },
+
+  php: (endpoint: ApiEndpoint, baseUrl: string, key: string, params: Record<string, any>) => {
+    return `<?php
+$curl = curl_init();
+
+curl_setopt_array($curl, [
+  CURLOPT_URL => "${baseUrl}${endpoint.path}",
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_CUSTOMREQUEST => "${endpoint.method}",
+  CURLOPT_POSTFIELDS => json_encode(${JSON.stringify(params)}),
+  CURLOPT_HTTPHEADER => [
+    "Authorization: Bearer ${key || 'YOUR_NEXUS_API_KEY'}",
+    "Content-Type: application/json"
+  ],
+]);
+
+$response = curl_exec($curl);
+curl_close($curl);
+echo $response;`;
+  }
+};

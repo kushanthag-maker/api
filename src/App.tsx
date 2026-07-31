@@ -1,0 +1,233 @@
+import React, { useState, useEffect } from 'react';
+import { Header } from './components/Header';
+import { Hero } from './components/Hero';
+import { ApiExplorer } from './components/ApiExplorer';
+import { Playground } from './components/Playground';
+import { KeyManager } from './components/KeyManager';
+import { AnalyticsView } from './components/AnalyticsView';
+import { PricingTiers } from './components/PricingTiers';
+import { VercelDeployModal } from './components/VercelDeployModal';
+import { Footer } from './components/Footer';
+import { ApiKey } from './types';
+import { 
+  Boxes, 
+  Zap, 
+  ShieldCheck, 
+  Globe2, 
+  Terminal, 
+  Key, 
+  ArrowRight,
+  Code,
+  Sparkles,
+  Layers,
+  Check
+} from 'lucide-react';
+
+const INITIAL_KEYS: ApiKey[] = [
+  {
+    id: 'k1',
+    name: 'Production Vercel App',
+    key: 'nx_live_9a8f23c10b48e71d932e',
+    prefix: 'nx_live_',
+    createdAt: '2026-07-30',
+    lastUsed: 'Just now',
+    status: 'active',
+    environment: 'production',
+    permissions: ['read', 'write'],
+    usageToday: 2410,
+    usageLimit: 10000
+  },
+  {
+    id: 'k2',
+    name: 'Staging Integration Test',
+    key: 'nx_test_3b2c19a84d77e11f0293',
+    prefix: 'nx_test_',
+    createdAt: '2026-07-28',
+    lastUsed: '2 hours ago',
+    status: 'active',
+    environment: 'development',
+    permissions: ['read'],
+    usageToday: 180,
+    usageLimit: 10000
+  }
+];
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [vercelModalOpen, setVercelModalOpen] = useState<boolean>(false);
+  const [keysModalOpen, setKeysModalOpen] = useState<boolean>(false);
+
+  // Persistent API Keys
+  const [keys, setKeys] = useState<ApiKey[]>(() => {
+    try {
+      const saved = localStorage.getItem('nexus_api_keys');
+      return saved ? JSON.parse(saved) : INITIAL_KEYS;
+    } catch (e) {
+      return INITIAL_KEYS;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('nexus_api_keys', JSON.stringify(keys));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [keys]);
+
+  const handleCreateKey = (keyData: Omit<ApiKey, 'id' | 'createdAt' | 'lastUsed' | 'usageToday'>) => {
+    const newKeyItem: ApiKey = {
+      ...keyData,
+      id: `key_${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0],
+      lastUsed: 'Never',
+      usageToday: 0
+    };
+    setKeys(prev => [newKeyItem, ...prev]);
+  };
+
+  const handleRevokeKey = (keyId: string) => {
+    setKeys(prev =>
+      prev.map(k => (k.id === keyId ? { ...k, status: k.status === 'active' ? 'revoked' : 'active' } : k))
+    );
+  };
+
+  const handleDeleteKey = (keyId: string) => {
+    setKeys(prev => prev.filter(k => k.id !== keyId));
+  };
+
+  const activeKeys = keys.filter(k => k.status === 'active');
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-200 flex flex-col">
+      
+      {/* Header Bar */}
+      <Header
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenVercelModal={() => setVercelModalOpen(true)}
+        onOpenKeysModal={() => setActiveTab('keys')}
+        keyCount={activeKeys.length}
+      />
+
+      {/* Main Content Body */}
+      <main className="flex-1">
+        {activeTab === 'overview' && (
+          <div className="space-y-12">
+            <Hero
+              onExploreDocs={() => setActiveTab('docs')}
+              onOpenSandbox={() => setActiveTab('playground')}
+              onOpenVercelModal={() => setVercelModalOpen(true)}
+            />
+
+            {/* Core Features Showcase Grid */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+              <div className="text-center max-w-3xl mx-auto space-y-3">
+                <h2 className="text-3xl font-bold tracking-tight text-white">
+                  Why Developers Choose <span className="text-cyan-400">Nexus API</span>
+                </h2>
+                <p className="text-sm text-slate-400">
+                  Engineered from the ground up for extreme speed, developer ergonomics, and native Vercel hosting readiness.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3 shadow-xl hover:border-cyan-500/50 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Sub-20ms Edge Gateway</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Anycast routing across 28 edge points guarantees sub-20ms latency worldwide with instant failovers.
+                  </p>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3 shadow-xl hover:border-indigo-500/50 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                    <Terminal className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Multi-SDK Code Generator</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Instant production-ready snippets in cURL, JavaScript, Python, Go, Rust, and PHP with 1-click clipboard copy.
+                  </p>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3 shadow-xl hover:border-emerald-500/50 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                      <path d="M24 22.5D12 0 0 22.5h24z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Zero-Config Vercel Hosting</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Pre-configured with <code className="text-cyan-300 font-mono">vercel.json</code> rewrite rules for one-click Vercel deployment.
+                  </p>
+                </div>
+
+              </div>
+
+              {/* Quick Start Teaser CTA */}
+              <div className="p-8 rounded-2xl bg-gradient-to-r from-slate-900 via-cyan-950/30 to-indigo-950/40 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-2xl">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold text-white">Ready to test Nexus API in your app?</h3>
+                  <p className="text-xs text-slate-300">
+                    Explore the live interactive documentation and send test requests in under 30 seconds.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setActiveTab('docs')}
+                  className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                >
+                  <span>Open API Explorer</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+
+            </section>
+          </div>
+        )}
+
+        {activeTab === 'docs' && (
+          <ApiExplorer
+            activeKeys={activeKeys}
+            onOpenKeysModal={() => setActiveTab('keys')}
+          />
+        )}
+
+        {activeTab === 'playground' && (
+          <Playground activeKeys={activeKeys} />
+        )}
+
+        {activeTab === 'keys' && (
+          <KeyManager
+            keys={keys}
+            onCreateKey={handleCreateKey}
+            onRevokeKey={handleRevokeKey}
+            onDeleteKey={handleDeleteKey}
+          />
+        )}
+
+        {activeTab === 'analytics' && <AnalyticsView />}
+
+        {activeTab === 'pricing' && (
+          <PricingTiers onSelectPlan={(plan) => setActiveTab('keys')} />
+        )}
+      </main>
+
+      {/* Footer */}
+      <Footer
+        setActiveTab={setActiveTab}
+        onOpenVercelModal={() => setVercelModalOpen(true)}
+      />
+
+      {/* Vercel Hosting Modal */}
+      <VercelDeployModal
+        isOpen={vercelModalOpen}
+        onClose={() => setVercelModalOpen(false)}
+      />
+
+    </div>
+  );
+}

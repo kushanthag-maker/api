@@ -1,0 +1,6 @@
+{
+  "name": "Nexus API Developer Portal",
+  "description": "A modern, high-performance API platform and developer hub featuring interactive documentation, live API playground, API key management, real-time analytics, and Vercel hosting readiness.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
