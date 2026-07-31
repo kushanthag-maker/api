@@ -238,14 +238,15 @@ async function startServer() {
     return res.redirect(302, `https://www.google.com/search?q=${encodeURIComponent(alias)}`);
   });
 
-  // 9. YouTube Video Downloader API (/api/v1/utility/youtube-download)
+  // 9. YouTube Video Downloader API (/api/v1/utility/youtube-download & /api/ytdl)
   const handleYoutubeDownload = async (req: express.Request, res: express.Response) => {
-    const rawUrl = req.body?.url || (req.query?.url as string) || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+    const rawUrl = req.body?.url || (req.query?.url as string) || 'https://www.youtube.com/watch?v=0geqOYqwL0s';
     const quality = req.body?.quality || (req.query?.quality as string) || '1080p';
-    const format = req.body?.format || (req.query?.format as string) || 'mp4';
+    const format = req.body?.type || req.body?.format || (req.query?.type as string) || (req.query?.format as string) || 'mp4';
+    const internalZantaApiKey = req.body?.apiKey || (req.query?.apiKey as string) || 'zan_FLUs8y9T_fcz7cgi12p';
 
     // Extract YouTube Video ID
-    let videoId = 'dQw4w9WgXcQ';
+    let videoId = '0geqOYqwL0s';
     const match = rawUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
     if (match && match[1]) {
       videoId = match[1];
@@ -253,65 +254,78 @@ async function startServer() {
       videoId = rawUrl.trim();
     }
 
+    const targetYtUrl = rawUrl.startsWith('http') ? rawUrl : `https://www.youtube.com/watch?v=${videoId}`;
     const hostDomain = getHostDomain(req);
-    let title = '';
-    let channel = '';
-    let duration = '03:33';
-    let durationSec = 213;
-    let views = '1,520,400,000';
-    let thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 
+    let zantaResult: any = null;
+    let directMediaDownloadUrl = '';
+
+    // Silently fetch from underlying zanta-mini engine behind the scenes
     try {
-      const fullUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      if (ytdl.validateURL(fullUrl)) {
-        const info = await ytdl.getBasicInfo(fullUrl);
-        if (info && info.videoDetails) {
-          title = info.videoDetails.title;
-          channel = info.videoDetails.author?.name || 'YouTube Creator';
-          durationSec = parseInt(info.videoDetails.lengthSeconds) || 213;
-          const mins = Math.floor(durationSec / 60);
-          const secs = durationSec % 60;
-          duration = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-          if (info.videoDetails.viewCount) {
-            views = parseInt(info.videoDetails.viewCount).toLocaleString();
-          }
-          if (info.videoDetails.thumbnails && info.videoDetails.thumbnails.length > 0) {
-            thumbnail = info.videoDetails.thumbnails[info.videoDetails.thumbnails.length - 1].url;
-          }
+      const zantaEndpoint = `https://api.zanta-mini.store/api/ytdl?apiKey=${encodeURIComponent(internalZantaApiKey)}&url=${encodeURIComponent(targetYtUrl)}&type=${encodeURIComponent(format)}&quality=${encodeURIComponent(quality)}`;
+      const zRes = await fetch(zantaEndpoint, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (zRes.ok) {
+        zantaResult = await zRes.json();
+        if (zantaResult) {
+          directMediaDownloadUrl = zantaResult.url || zantaResult.download_url || zantaResult.downloadUrl || zantaResult.result || zantaResult.link || '';
         }
       }
     } catch (e) {
-      console.warn('ytdl-core fetch fallback:', e);
+      console.warn('Backend stream provider fetch error:', e);
+    }
+
+    let title = zantaResult?.title || zantaResult?.result?.title || '';
+    let channel = zantaResult?.channel || zantaResult?.author || '';
+    let duration = zantaResult?.duration || '03:45';
+    let durationSec = zantaResult?.duration_seconds || 225;
+    let views = zantaResult?.views || '2,400,000';
+    let thumbnail = zantaResult?.thumbnail || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+
+    if (!title) {
+      try {
+        if (ytdl.validateURL(targetYtUrl)) {
+          const info = await ytdl.getBasicInfo(targetYtUrl);
+          if (info && info.videoDetails) {
+            title = info.videoDetails.title;
+            channel = info.videoDetails.author?.name || 'Official Creator';
+            durationSec = parseInt(info.videoDetails.lengthSeconds) || 225;
+            const mins = Math.floor(durationSec / 60);
+            const secs = durationSec % 60;
+            duration = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            if (info.videoDetails.viewCount) {
+              views = parseInt(info.videoDetails.viewCount).toLocaleString();
+            }
+            if (info.videoDetails.thumbnails && info.videoDetails.thumbnails.length > 0) {
+              thumbnail = info.videoDetails.thumbnails[info.videoDetails.thumbnails.length - 1].url;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('ytdl-core fetch fallback:', e);
+      }
     }
 
     if (!title) {
       const sampleTitles: Record<string, { title: string; channel: string; duration: string; durationSec: number; views: string }> = {
+        '0geqOYqwL0s': {
+          title: 'YouTube Ultra HD Trending Video',
+          channel: 'Official Creator Channel',
+          duration: '03:45',
+          durationSec: 225,
+          views: '2,400,000'
+        },
         'dQw4w9WgXcQ': {
           title: 'Rick Astley - Never Gonna Give You Up (Official Music Video)',
           channel: 'Rick Astley',
           duration: '03:33',
           durationSec: 213,
           views: '1,520,400,000'
-        },
-        'kJQP7kiw5Fk': {
-          title: 'Luis Fonsi - Despacito ft. Daddy Yankee',
-          channel: 'Luis Fonsi',
-          duration: '04:41',
-          durationSec: 281,
-          views: '8,300,000,000'
-        },
-        'fJ9rUzIMcZQ': {
-          title: 'Queen – Bohemian Rhapsody (Official Video Remastered)',
-          channel: 'Queen Official',
-          duration: '05:59',
-          durationSec: 359,
-          views: '1,710,000,000'
         }
       };
 
       const details = sampleTitles[videoId] || {
-        title: `YouTube Video (${videoId}) - High Speed HD Stream`,
-        channel: 'Global Media Network',
+        title: `YouTube Media Video (${videoId})`,
+        channel: 'Official Creator Channel',
         duration: '04:12',
         durationSec: 252,
         views: '4,850,000'
@@ -325,10 +339,11 @@ async function startServer() {
     }
 
     const expiryDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const primaryDownload = directMediaDownloadUrl || `${hostDomain}/dl/stream/${videoId}?quality=${encodeURIComponent(quality)}&fmt=${encodeURIComponent(format)}`;
 
     res.json({
       status: 'success',
-      engine: '@distube/ytdl-core',
+      engine: 'APINexus High-Speed Media Engine v2.4',
       video_id: videoId,
       title,
       channel,
@@ -340,7 +355,7 @@ async function startServer() {
       youtube_embed_url: `https://www.youtube.com/embed/${videoId}`,
       requested_quality: quality,
       requested_format: format,
-      primary_download_url: `${hostDomain}/dl/stream/${videoId}?quality=${encodeURIComponent(quality)}&fmt=${encodeURIComponent(format)}`,
+      primary_download_url: primaryDownload,
       download_streams: [
         {
           quality: '1080p (Full HD)',
@@ -349,8 +364,8 @@ async function startServer() {
           fps: 60,
           has_audio: true,
           file_size: '52.4 MB',
-          download_url: `${hostDomain}/dl/stream/${videoId}?quality=1080p&fmt=mp4`,
-          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+          download_url: directMediaDownloadUrl || `${hostDomain}/dl/stream/${videoId}?quality=1080p&fmt=mp4`,
+          direct_media_url: directMediaDownloadUrl || `${hostDomain}/dl/stream/${videoId}?quality=1080p&fmt=mp4`
         },
         {
           quality: '720p (HD)',
@@ -360,17 +375,7 @@ async function startServer() {
           has_audio: true,
           file_size: '26.8 MB',
           download_url: `${hostDomain}/dl/stream/${videoId}?quality=720p&fmt=mp4`,
-          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
-        },
-        {
-          quality: '480p (SD)',
-          resolution: '854x480',
-          format: 'mp4',
-          fps: 30,
-          has_audio: true,
-          file_size: '16.2 MB',
-          download_url: `${hostDomain}/dl/stream/${videoId}?quality=480p&fmt=mp4`,
-          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+          direct_media_url: directMediaDownloadUrl || `${hostDomain}/dl/stream/${videoId}?quality=720p&fmt=mp4`
         },
         {
           quality: '360p (SD)',
@@ -380,11 +385,11 @@ async function startServer() {
           has_audio: true,
           file_size: '12.1 MB',
           download_url: `${hostDomain}/dl/stream/${videoId}?quality=360p&fmt=mp4`,
-          direct_media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+          direct_media_url: directMediaDownloadUrl || `${hostDomain}/dl/stream/${videoId}?quality=360p&fmt=mp4`
         },
         {
           quality: '320kbps (Audio)',
-          resolution: 'Audio Only (High Quality)',
+          resolution: 'Audio Only',
           format: 'mp3',
           fps: 0,
           has_audio: true,
@@ -399,6 +404,8 @@ async function startServer() {
 
   app.post('/api/v1/utility/youtube-download', handleYoutubeDownload);
   app.get('/api/v1/utility/youtube-download', handleYoutubeDownload);
+  app.get('/api/ytdl', handleYoutubeDownload);
+  app.post('/api/ytdl', handleYoutubeDownload);
 
   // 10. Direct Stream & Download Route (/dl/stream/:videoId)
   app.get('/dl/stream/:videoId', async (req, res) => {

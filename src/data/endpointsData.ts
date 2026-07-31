@@ -254,34 +254,36 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
   },
   {
     id: 'util-youtube-download',
-    name: 'YouTube Video Downloader Engine',
+    name: 'Nexus HD YouTube Video Downloader',
     category: 'utility',
     method: 'POST',
     path: '/api/v1/utility/youtube-download',
-    summary: 'Extract video metadata and direct MP4/MP3 download streams for YouTube videos.',
-    description: 'Parses YouTube video URLs, extracts video titles, channels, durations, high-res thumbnails, and returns high-speed stream links for 1080p HD, 720p, 360p, and 320kbps MP3 audio.',
+    summary: 'Extract YouTube video metadata and direct MP4/MP3 download stream URLs.',
+    description: 'Parses YouTube video URLs or video IDs, extracts title, channel, duration, view count, high-res thumbnail, and returns direct downloadable stream URLs for 1080p, 720p, 360p, and 320kbps MP3 audio.',
     rateLimit: '180 req/min',
     params: [
-      { name: 'url', type: 'string', required: true, description: 'YouTube video URL or Video ID.', location: 'body', default: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
-      { name: 'quality', type: 'string', required: false, description: 'Requested stream quality (1080p, 720p, 360p, mp3_320k, auto).', location: 'body', default: '1080p' },
-      { name: 'format', type: 'string', required: false, description: 'Target format (mp4 or mp3).', location: 'body', default: 'mp4' }
+      { name: 'url', type: 'string', required: true, description: 'YouTube video URL or Video ID.', location: 'body', default: 'https://youtube.com/watch?v=0geqOYqwL0s' },
+      { name: 'quality', type: 'string', required: false, description: 'Requested stream quality (1080p, 720p, 360p, 320k, auto).', location: 'body', default: '1080p' },
+      { name: 'format', type: 'string', required: false, description: 'Target media format (mp4 or mp3).', location: 'body', default: 'mp4' }
     ],
     sampleRequestBody: {
-      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      url: 'https://youtube.com/watch?v=0geqOYqwL0s',
       quality: '1080p',
       format: 'mp4'
     },
     sampleResponseBody: {
       status: 'success',
-      video_id: 'dQw4w9WgXcQ',
-      title: 'Rick Astley - Never Gonna Give You Up (Official Music Video)',
-      channel: 'Rick Astley',
-      duration: '03:33',
-      duration_seconds: 213,
-      view_count: '1,520,400,000',
-      thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+      engine: 'APINexus High-Speed Media Engine v2.4',
+      video_id: '0geqOYqwL0s',
+      title: 'YouTube Ultra HD Trending Video',
+      channel: 'Official Creator Channel',
+      duration: '03:45',
+      duration_seconds: 225,
+      view_count: '2,400,000',
+      thumbnail: 'https://img.youtube.com/vi/0geqOYqwL0s/maxresdefault.jpg',
       requested_quality: '1080p',
-      primary_download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/dQw4w9WgXcQ?quality=1080p&fmt=mp4',
+      requested_format: 'mp4',
+      primary_download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/0geqOYqwL0s?quality=1080p&fmt=mp4',
       download_streams: [
         {
           quality: '1080p (Full HD)',
@@ -289,8 +291,8 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
           format: 'mp4',
           fps: 60,
           has_audio: true,
-          file_size: '48.2 MB',
-          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/dQw4w9WgXcQ?quality=1080p&fmt=mp4'
+          file_size: '52.4 MB',
+          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/0geqOYqwL0s?quality=1080p&fmt=mp4'
         },
         {
           quality: '720p (HD)',
@@ -298,17 +300,8 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
           format: 'mp4',
           fps: 60,
           has_audio: true,
-          file_size: '24.1 MB',
-          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/dQw4w9WgXcQ?quality=720p&fmt=mp4'
-        },
-        {
-          quality: '360p (SD)',
-          resolution: '640x360',
-          format: 'mp4',
-          fps: 30,
-          has_audio: true,
-          file_size: '11.5 MB',
-          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/dQw4w9WgXcQ?quality=360p&fmt=mp4'
+          file_size: '26.8 MB',
+          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/0geqOYqwL0s?quality=720p&fmt=mp4'
         },
         {
           quality: '320kbps (Audio)',
@@ -316,11 +309,11 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
           format: 'mp3',
           fps: 0,
           has_audio: true,
-          file_size: '8.4 MB',
-          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/dQw4w9WgXcQ?quality=320k&fmt=mp3'
+          file_size: '9.2 MB',
+          download_url: 'https://apinexusdev-blush.vercel.app/dl/stream/0geqOYqwL0s?quality=320k&fmt=mp3'
         }
       ],
-      expires_at: '2026-07-31T14:30:00Z'
+      expires_at: '2026-08-01T14:30:00Z'
     }
   }
 ];
