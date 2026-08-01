@@ -2,9 +2,20 @@ import express from 'express';
 import path from 'path';
 import crypto from 'crypto';
 import cors from 'cors';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
-import ytdl from '@distube/ytdl-core';
+
+let ytdlModule: any = null;
+async function getYtdl() {
+  if (!ytdlModule) {
+    try {
+      const mod = await import('@distube/ytdl-core');
+      ytdlModule = mod.default || mod;
+    } catch (e) {
+      console.warn('ytdl-core import fallback:', e);
+    }
+  }
+  return ytdlModule;
+}
 
 // Initialize Gemini AI lazily if key exists
 let aiClient: GoogleGenAI | null = null;
@@ -983,7 +994,8 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
 
     if (!title) {
       try {
-        if (ytdl.validateURL(targetYtUrl)) {
+        const ytdl = await getYtdl();
+        if (ytdl && ytdl.validateURL(targetYtUrl)) {
           const info = await ytdl.getBasicInfo(targetYtUrl);
           if (info && info.videoDetails) {
             title = info.videoDetails.title;
@@ -1093,7 +1105,8 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
 
     try {
       const fullUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      if (ytdl.validateURL(fullUrl)) {
+      const ytdl = await getYtdl();
+      if (ytdl && ytdl.validateURL(fullUrl)) {
         res.setHeader('Content-Disposition', `attachment; filename="${videoId}_${quality}.${isMp3 ? 'mp3' : 'mp4'}"`);
         res.setHeader('Content-Type', isMp3 ? 'audio/mpeg' : 'video/mp4');
         const stream = ytdl(fullUrl, {
@@ -2178,6 +2191,7 @@ export async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
 
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
