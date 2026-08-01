@@ -18,11 +18,11 @@ export const PricingTiers: React.FC<PricingTiersProps> = ({ onSelectPlan }) => {
   const [billingCycle, setBillingCycle] = useState<'month' | 'year'>('month');
   const [estMonthlyReqs, setEstMonthlyReqs] = useState<number>(250000);
 
-  const plans: PricingPlan[] = [
+  const plans = [
     {
       id: 'developer',
       name: 'Developer Starter',
-      price: 0,
+      priceLkr: 0,
       period: billingCycle,
       requestsPerMonth: '10,000 requests / month',
       rateLimit: '120 req / minute',
@@ -37,7 +37,7 @@ export const PricingTiers: React.FC<PricingTiersProps> = ({ onSelectPlan }) => {
     {
       id: 'pro',
       name: 'Pro Scale',
-      price: billingCycle === 'month' ? 29 : 23,
+      priceLkr: billingCycle === 'month' ? 1490 : 1190,
       period: billingCycle,
       requestsPerMonth: '1,000,000 requests / month',
       rateLimit: '2,000 req / minute',
@@ -55,7 +55,7 @@ export const PricingTiers: React.FC<PricingTiersProps> = ({ onSelectPlan }) => {
     {
       id: 'enterprise',
       name: 'Enterprise Edge',
-      price: billingCycle === 'month' ? 299 : 239,
+      priceLkr: billingCycle === 'month' ? 9900 : 7900,
       period: billingCycle,
       requestsPerMonth: '100,000,000+ requests / month',
       rateLimit: 'Custom SLA rate limits',
@@ -143,7 +143,9 @@ export const PricingTiers: React.FC<PricingTiersProps> = ({ onSelectPlan }) => {
             </div>
 
             <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-extrabold text-white font-mono">${plan.price}</span>
+              <span className="text-3xl font-extrabold text-cyan-300 font-mono">
+                {plan.priceLkr === 0 ? 'FREE' : `Rs. ${plan.priceLkr.toLocaleString()} LKR`}
+              </span>
               <span className="text-xs font-mono text-slate-400">/{plan.period}</span>
             </div>
 

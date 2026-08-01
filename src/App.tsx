@@ -12,6 +12,7 @@ import { BanAppealModal } from './components/BanAppealModal';
 import { SiteRulesModal } from './components/SiteRulesModal';
 import { NexusAiControlModal } from './components/NexusAiControlModal';
 import { CoinsAndDataCardsModal } from './components/CoinsAndDataCardsModal';
+import { AdminPanel } from './components/AdminPanel';
 import { Footer } from './components/Footer';
 import { ApiKey, UserProfile } from './types';
 import { 
@@ -268,6 +269,8 @@ export default function App() {
         {activeTab === 'pricing' && (
           <PricingTiers onSelectPlan={(plan) => setActiveTab('keys')} />
         )}
+
+        {activeTab === 'admin' && <AdminPanel />}
       </main>
 
       {/* Footer */}

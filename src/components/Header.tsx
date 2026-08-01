@@ -59,6 +59,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'keys', label: 'API Keys', icon: Key, badge: keyCount > 0 ? keyCount : undefined },
     { id: 'analytics', label: 'Telemetry', icon: BarChart2 },
     { id: 'pricing', label: 'Pricing', icon: DollarSign },
+    { id: 'admin', label: 'Admin', icon: ShieldAlert },
   ];
 
   return (
@@ -135,16 +136,6 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <FileText className="w-3.5 h-3.5 text-slate-400" />
               <span>Rules</span>
-            </button>
-
-            {/* Nexus AI Engine Master Control Trigger */}
-            <button
-              onClick={onOpenNexusAiModal}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-950 via-indigo-950 to-slate-900 hover:from-cyan-900 hover:to-indigo-900 text-cyan-300 border border-cyan-500/40 text-xs font-bold transition-all shadow-md shadow-cyan-500/10 cursor-pointer animate-pulse"
-              title="Nexus AI Site Controller"
-            >
-              <Cpu className="w-4 h-4 text-cyan-400" />
-              <span className="hidden sm:inline">Nexus AI</span>
             </button>
 
             {/* Google Authentication Button / Profile */}

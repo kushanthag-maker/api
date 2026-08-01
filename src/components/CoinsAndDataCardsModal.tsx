@@ -482,18 +482,20 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-slate-800 text-center">
-                      <div className="text-base font-extrabold text-white mb-2">${pkg.priceUsd}</div>
+                      <div className="text-base font-extrabold text-amber-300 font-mono mb-2">
+                        Rs. {pkg.priceLkr || Math.round(pkg.priceUsd * 180)} LKR
+                      </div>
                       <button
                         onClick={() => handleBuyCoinPackage(pkg)}
                         disabled={buyingPackId === pkg.id}
-                        className="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition"
+                        className="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md"
                       >
                         {buyingPackId === pkg.id ? (
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                         ) : (
                           <>
                             <PlusCircle className="w-3.5 h-3.5" />
-                            Add Coins Now
+                            Buy Coins Now
                           </>
                         )}
                       </button>

@@ -85,6 +85,7 @@ export interface UserProfile {
   isVerifiedGoogleAccount: boolean;
   role: 'developer' | 'admin' | 'guest';
   tier: string;
+  apiKey?: string;
   isBanned?: boolean;
   banReason?: string;
   coinsBalance?: number;
@@ -110,6 +111,7 @@ export interface CoinPackage {
   name: string;
   coins: number;
   bonusCoins: number;
+  priceLkr: number;
   priceUsd: number;
   popular?: boolean;
   badge?: string;
@@ -121,6 +123,7 @@ export interface DataCard {
   dataAllowance: string;
   validityDays: number;
   coinPrice: number;
+  priceLkr?: number;
   description: string;
   features: string[];
   recommendedFor: string;
