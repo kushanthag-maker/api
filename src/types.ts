@@ -1,6 +1,6 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
-export type ApiCategory = 'ai' | 'auth' | 'data' | 'utility';
+export type ApiCategory = 'ai' | 'auth' | 'data' | 'utility' | 'news';
 
 export interface ApiParam {
   name: string;

@@ -2,6 +2,8 @@ import express from 'express';
 import path from 'path';
 import crypto from 'crypto';
 import cors from 'cors';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 import { GoogleGenAI } from '@google/genai';
 
 let ytdlModule: any = null;
@@ -1220,6 +1222,223 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
     'dev.user@gmail.com': 'nk_live_devuser_112233445566778899',
     'default': 'nk_live_default_key_998877665544'
   };
+
+  // Dedicated Helper to verify API Key and deduct 2 Nexus Coins
+  function deductCoinsAndVerifyKey(req: express.Request, coinCost = 2): {
+    allowed: boolean;
+    userEmail: string;
+    remainingCoins: number;
+    errorResponse?: { statusCode: number; payload: any };
+  } {
+    const rawApiKey = extractApiKey(req);
+    if (!rawApiKey || !rawApiKey.trim()) {
+      return {
+        allowed: false,
+        userEmail: '',
+        remainingCoins: 0,
+        errorResponse: {
+          statusCode: 401,
+          payload: {
+            status: false,
+            message: 'API Key (apiKey / x-api-key) නොමැත! කරුණාකර වලංගු API Key එකක් ඇතුලත් කරන්න.',
+            error: 'UNAUTHORIZED_MISSING_API_KEY'
+          }
+        }
+      };
+    }
+
+    const key = rawApiKey.trim();
+
+    // Determine user email associated with this API Key
+    let userEmail = 'default';
+    let found = false;
+    for (const [email, userKey] of Object.entries(userApiKeysStore)) {
+      if (userKey === key) {
+        userEmail = email;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      userEmail = 'kushanthag@gmail.com';
+      userApiKeysStore[userEmail] = key;
+    }
+
+    const currentBalance = userCoinsStore[userEmail] !== undefined ? userCoinsStore[userEmail] : 250;
+
+    if (currentBalance < coinCost) {
+      return {
+        allowed: false,
+        userEmail,
+        remainingCoins: currentBalance,
+        errorResponse: {
+          statusCode: 402,
+          payload: {
+            status: false,
+            message: `ඔබගේ Nexus Coins ප්‍රමාණය ප්‍රමාණවත් නොවේ! (අවශ්‍ය Coin ප්‍රමාණය: ${coinCost}, ඔබ ළඟ ඇති Coins: ${currentBalance})`,
+            coins_balance: currentBalance,
+            error: 'INSUFFICIENT_COINS'
+          }
+        }
+      };
+    }
+
+    const newBalance = currentBalance - coinCost;
+    userCoinsStore[userEmail] = newBalance;
+
+    return {
+      allowed: true,
+      userEmail,
+      remainingCoins: newBalance
+    };
+  }
+
+  // 1. Ada Derana News List Endpoint (/api/v1/news/latest & /api/news)
+  const handleAdaDeranaNewsList = async (req: express.Request, res: express.Response) => {
+    const authCheck = deductCoinsAndVerifyKey(req, 2);
+    if (!authCheck.allowed && authCheck.errorResponse) {
+      return res.status(authCheck.errorResponse.statusCode).json(authCheck.errorResponse.payload);
+    }
+
+    try {
+      const url = 'https://sinhala.adaderana.lk/';
+      const { data } = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
+        timeout: 10000
+      });
+
+      const $ = cheerio.load(data);
+      const newsList: Array<{ title: string; time: string; image: string | null; url: string }> = [];
+
+      $('.news-story').each((index, element) => {
+        const title = $(element).find('.story-text h2 a, .story-text a').first().text().trim();
+        const rawLink = $(element).find('a').first().attr('href');
+        const imgUrl = $(element).find('.story-image img, img').first().attr('src');
+        const relativeTime = $(element).find('.story-text span, .time').text().trim();
+
+        let fullLink = rawLink || '';
+        if (rawLink && !rawLink.startsWith('http')) {
+          fullLink = `https://sinhala.adaderana.lk/${rawLink.replace(/^\//, '')}`;
+        }
+
+        let fullImage = imgUrl || null;
+        if (imgUrl && !imgUrl.startsWith('http')) {
+          fullImage = `https://sinhala.adaderana.lk/${imgUrl.replace(/^\//, '')}`;
+        }
+
+        if (title && newsList.length < 15) {
+          newsList.push({
+            title,
+            time: relativeTime || 'Just Now',
+            image: fullImage,
+            url: fullLink
+          });
+        }
+      });
+
+      res.json({
+        status: true,
+        creator: 'Sandaru Udan',
+        coins_deducted: 2,
+        remaining_coins: authCheck.remainingCoins,
+        total_news: newsList.length,
+        results: newsList
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        status: false,
+        message: 'News fetch කිරීමට නොහැකි විය!',
+        error: error?.message || 'Scraping Failed'
+      });
+    }
+  };
+
+  app.get('/api/news', handleAdaDeranaNewsList);
+  app.post('/api/news', handleAdaDeranaNewsList);
+  app.get('/api/v1/news/latest', handleAdaDeranaNewsList);
+  app.post('/api/v1/news/latest', handleAdaDeranaNewsList);
+
+  // 2. Ada Derana Full News Detail Endpoint (/api/v1/news/detail & /api/news-detail)
+  const handleAdaDeranaNewsDetail = async (req: express.Request, res: express.Response) => {
+    const newsUrl = (req.query.url || req.body?.url) as string | undefined;
+
+    if (!newsUrl || !newsUrl.trim()) {
+      return res.status(400).json({
+        status: false,
+        message: 'කරුණාකර News Link (URL) එකක් ඇතුලත් කරන්න! (?url=...)'
+      });
+    }
+
+    const authCheck = deductCoinsAndVerifyKey(req, 2);
+    if (!authCheck.allowed && authCheck.errorResponse) {
+      return res.status(authCheck.errorResponse.statusCode).json(authCheck.errorResponse.payload);
+    }
+
+    try {
+      const { data } = await axios.get(newsUrl.trim(), {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
+        timeout: 10000
+      });
+
+      const $ = cheerio.load(data);
+
+      const title = $('.news-story h1, .story-text h1, .news-heading, h1').first().text().trim() || 'Title Not Found';
+
+      let mainImage = $('.story-image img, .news-story img, article img, main img').first().attr('src') || null;
+      if (mainImage && !mainImage.startsWith('http')) {
+        mainImage = `https://sinhala.adaderana.lk/${mainImage.replace(/^\//, '')}`;
+      }
+
+      const timeStamp = $('.news-story span, .story-text span, .time, .date').first().text().trim() || 'N/A';
+
+      let fullDescription = '';
+      const contentBlock = $('.story-text, .news-story, .news-content, article, main').first();
+
+      if (contentBlock.length > 0) {
+        const clonedBlock = contentBlock.clone();
+        clonedBlock.find('h1, script, style, header, footer, nav, .social-share, .comments, iframe').remove();
+
+        clonedBlock.find('p').each((i, el) => {
+          const txt = $(el).text().trim();
+          if (txt.length > 0) fullDescription += txt + '\n\n';
+        });
+
+        if (!fullDescription.trim()) {
+          fullDescription = clonedBlock.text().trim();
+        }
+      }
+
+      res.json({
+        status: true,
+        creator: 'Sandaru Udan',
+        coins_deducted: 2,
+        remaining_coins: authCheck.remainingCoins,
+        data: {
+          title,
+          time: timeStamp,
+          image: mainImage,
+          full_news: fullDescription.replace(/\s+/g, ' ').trim(),
+          source_url: newsUrl.trim()
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        status: false,
+        message: 'මෙම Link එකේ විස්තර ලබාගැනීමට නොහැකි විය.',
+        error: error?.message || 'Detail Scraping Failed'
+      });
+    }
+  };
+
+  app.get('/api/news-detail', handleAdaDeranaNewsDetail);
+  app.post('/api/news-detail', handleAdaDeranaNewsDetail);
+  app.get('/api/v1/news/detail', handleAdaDeranaNewsDetail);
+  app.post('/api/v1/news/detail', handleAdaDeranaNewsDetail);
 
   // Daily Free Coin Claim Tracker (Email -> Date string YYYY-MM-DD -> Claimed Count)
   const dailyFreeCoinClaims: Record<string, { date: string; coinsClaimed: number }> = {};

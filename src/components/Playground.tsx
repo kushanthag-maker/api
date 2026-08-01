@@ -47,14 +47,13 @@ interface RequestHistoryItem {
 
 export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
   const hostBase = typeof window !== 'undefined' ? window.location.origin : 'https://apinexusdev-blush.vercel.app';
-  const [method, setMethod] = useState<HttpMethod>('GET');
-  const [url, setUrl] = useState<string>(`${hostBase}/api/ytdl?apiKey=nx_live_demo_982a3&url=https%3A%2F%2Fyoutube.com%2Fwatch%3Fv%3D0geqOYqwL0s&type=mp4&quality=360`);
-  const [copiedUrl, setCopiedUrl] = useState(false);
-  const [copiedJson, setCopiedJson] = useState(false);
-
   const [selectedKey, setSelectedKey] = useState<string>(
     activeKeys.length > 0 ? activeKeys[0].key : 'nx_live_demo_982a3'
   );
+  const [method, setMethod] = useState<HttpMethod>('GET');
+  const [url, setUrl] = useState<string>(`${hostBase}/api/v1/news/latest?apiKey=${selectedKey}`);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedJson, setCopiedJson] = useState(false);
 
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(url);

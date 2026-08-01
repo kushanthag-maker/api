@@ -1,6 +1,69 @@
 import { ApiEndpoint } from '../types';
 
 export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
+  // Ada Derana News Category
+  {
+    id: 'news-adaderana-list',
+    name: 'Ada Derana News List & Search API',
+    category: 'news',
+    method: 'GET',
+    path: '/api/v1/news/latest',
+    summary: 'Scrape and fetch real-time Sri Lanka Sinhala news list & headlines from Ada Derana.',
+    description: 'Scrapes real-time headlines, relative timestamps, lead thumbnails, and direct article URLs directly from Sinhala Ada Derana (sinhala.adaderana.lk). Costs 2 Nexus Coins per request. Requires a valid API Key.',
+    rateLimit: '100 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus User API Key credential (or x-api-key header).', location: 'query', default: 'nx_live_9a8f23c10b48e71d932e' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'nx_live_9a8f23c10b48e71d932e'
+    },
+    sampleResponseBody: {
+      status: true,
+      creator: 'Sandaru Udan',
+      coins_deducted: 2,
+      remaining_coins: 248,
+      total_news: 15,
+      results: [
+        {
+          title: 'මහනුවර ප්‍රධාන මාර්ගයේ රථවාහන තදබදයක්',
+          time: 'මීට မိနစ် 10 කට පෙර',
+          image: 'https://sinhala.adaderana.lk/news_images/news_12345.jpg',
+          url: 'https://sinhala.adaderana.lk/news_official.php?nid=192834'
+        }
+      ]
+    }
+  },
+  {
+    id: 'news-adaderana-detail',
+    name: 'Ada Derana News Article Detail API',
+    category: 'news',
+    method: 'GET',
+    path: '/api/v1/news/detail',
+    summary: 'Fetch full news article content, main image, timestamp, and metadata from Ada Derana.',
+    description: 'Scrapes full news article body text, lead image banner, publication timestamp, and source URL for any specific Ada Derana article link. Costs 2 Nexus Coins per request. Requires a valid API Key.',
+    rateLimit: '100 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus User API Key credential (or x-api-key header).', location: 'query', default: 'nx_live_9a8f23c10b48e71d932e' },
+      { name: 'url', type: 'string', required: true, description: 'Full Ada Derana article URL (e.g. https://sinhala.adaderana.lk/news_official.php?nid=192834).', location: 'query', default: 'https://sinhala.adaderana.lk/news_official.php?nid=192834' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'nx_live_9a8f23c10b48e71d932e',
+      url: 'https://sinhala.adaderana.lk/news_official.php?nid=192834'
+    },
+    sampleResponseBody: {
+      status: true,
+      creator: 'Sandaru Udan',
+      coins_deducted: 2,
+      remaining_coins: 246,
+      data: {
+        title: 'මහනුවර ප්‍රධාන මාර්ගයේ රථවාහන තදබදයක්',
+        time: '2026-08-01 10:15 AM',
+        image: 'https://sinhala.adaderana.lk/news_images/news_12345.jpg',
+        full_news: 'මහනුවර ප්‍රධාන මාර්ගයේ පවතින නඩත්තු කටයුතු හේතුවෙන් අධික රථවාහන තදබදයක් හටගෙන ඇති බව පොලීසිය පවසයි...',
+        source_url: 'https://sinhala.adaderana.lk/news_official.php?nid=192834'
+      }
+    }
+  },
   // AI Category
   {
     id: 'ai-code-generate',
