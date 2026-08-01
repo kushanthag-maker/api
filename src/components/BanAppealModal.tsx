@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { safeFetch } from '../lib/api';
 import { 
   X, 
   Sparkles, 
@@ -58,7 +59,7 @@ export const BanAppealModal: React.FC<BanAppealModalProps> = ({
     setLoading(true);
 
     try {
-      const res = await fetch('/api/v1/moderation/appeal', {
+      const res = await safeFetch('/api/v1/moderation/appeal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -67,7 +68,7 @@ export const BanAppealModal: React.FC<BanAppealModalProps> = ({
         })
       });
 
-      const data = await res.json();
+      const data = res.data;
 
       if (!res.ok) {
         throw new Error(data.message || 'Failed to submit appeal to Nexus AI.');

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { safeFetch } from '../lib/api';
 import { 
   Coins, 
   CreditCard, 
@@ -62,12 +63,12 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
     setLoading(true);
     try {
       const [resCoins, resCatalog] = await Promise.all([
-        fetch(`/api/v1/coins/balance?email=${encodeURIComponent(email)}`),
-        fetch(`/api/v1/datacards/catalog?email=${encodeURIComponent(email)}`)
+        safeFetch(`/api/v1/coins/balance?email=${encodeURIComponent(email)}`),
+        safeFetch(`/api/v1/datacards/catalog?email=${encodeURIComponent(email)}`)
       ]);
 
-      const dataCoins = await resCoins.json();
-      const dataCatalog = await resCatalog.json();
+      const dataCoins = resCoins.data;
+      const dataCatalog = resCatalog.data;
 
       if (dataCoins.status === 'success') {
         setCoinsBalance(dataCoins.coinsBalance);
@@ -92,8 +93,8 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
 
   const fetchReferralInfo = async () => {
     try {
-      const res = await fetch(`/api/v1/referral/info?email=${encodeURIComponent(email)}`);
-      const data = await res.json();
+      const res = await safeFetch(`/api/v1/referral/info?email=${encodeURIComponent(email)}`);
+      const data = res.data;
       if (data.status === 'success') {
         setReferralInfo({
           code: data.referralCode,
@@ -111,12 +112,12 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
     setClaimingDaily(true);
     setNotification(null);
     try {
-      const res = await fetch('/api/v1/coins/daily-claim', {
+      const res = await safeFetch('/api/v1/coins/daily-claim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
-      const data = await res.json();
+      const data = res.data;
       if (data.status === 'success') {
         setCoinsBalance(data.newCoinsBalance);
         setNotification({ type: 'success', message: data.message });
@@ -139,12 +140,12 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
     setRedeemingRef(true);
     setNotification(null);
     try {
-      const res = await fetch('/api/v1/referral/redeem', {
+      const res = await safeFetch('/api/v1/referral/redeem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, refCode: inputRefCode.trim() })
       });
-      const data = await res.json();
+      const data = res.data;
       if (data.status === 'success') {
         setCoinsBalance(data.newCoinsBalance);
         setNotification({ type: 'success', message: data.message });
@@ -167,12 +168,12 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
     setBuyingPackId(pkg.id);
     setNotification(null);
     try {
-      const res = await fetch('/api/v1/coins/buy', {
+      const res = await safeFetch('/api/v1/coins/buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, packageId: pkg.id })
       });
-      const data = await res.json();
+      const data = res.data;
       if (data.status === 'success') {
         setCoinsBalance(data.newCoinsBalance);
         setNotification({
@@ -207,12 +208,12 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
     }
 
     try {
-      const res = await fetch('/api/v1/datacards/buy', {
+      const res = await safeFetch('/api/v1/datacards/buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, cardId: card.id })
       });
-      const data = await res.json();
+      const data = res.data;
       if (data.status === 'success') {
         setCoinsBalance(data.remainingCoins);
         setUserCards(prev => [...prev, data.purchasedCard]);

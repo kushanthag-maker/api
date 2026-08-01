@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { safeFetch } from '../lib/api';
 import { 
   X, 
   Sparkles, 
@@ -62,13 +63,12 @@ export const NexusAiControlModal: React.FC<NexusAiControlModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetch('/api/v1/ai/nexus-control', {
+      safeFetch('/api/v1/ai/nexus-control', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'get_system_stats', email })
       })
-        .then(res => res.json())
-        .then(data => setSysStats(data))
+        .then(res => setSysStats(res.data))
         .catch(console.error);
     }
   }, [isOpen, email]);

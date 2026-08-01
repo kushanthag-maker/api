@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { safeFetch } from '../lib/api';
 import { PlatformRule } from '../types';
 import { 
   X, 
@@ -28,10 +29,9 @@ export const SiteRulesModal: React.FC<SiteRulesModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetch('/api/v1/moderation/rules')
-        .then(res => res.json())
-        .then(data => {
-          if (data.rules) setRules(data.rules);
+      safeFetch('/api/v1/moderation/rules')
+        .then(res => {
+          if (res.data && res.data.rules) setRules(res.data.rules);
         })
         .catch(console.error)
         .finally(() => setLoading(false));

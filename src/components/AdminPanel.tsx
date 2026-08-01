@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { safeFetch } from '../lib/api';
 import { 
   ShieldAlert, 
   Lock, 
@@ -69,12 +70,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
     setAuthError(null);
 
     try {
-      const res = await fetch('/api/v1/admin/login', {
+      const res = await safeFetch('/api/v1/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: adminPassword })
       });
-      const data = await res.json();
+      const data = res.data;
 
       if (res.ok && data.status === 'success') {
         setIsAuthenticated(true);
@@ -91,8 +92,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/admin/users?password=' + encodeURIComponent(sessionStorage.getItem('nexus_admin_token') || 'NexusAdmin#2026!SecureKey'));
-      const data = await res.json();
+      const res = await safeFetch('/api/v1/admin/users?password=' + encodeURIComponent(sessionStorage.getItem('nexus_admin_token') || 'NexusAdmin#2026!SecureKey'));
+      const data = res.data;
       if (data.status === 'success') {
         setUsers(data.users || []);
         setAppeals(data.appeals || []);
@@ -106,7 +107,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
 
   const handleSendCoins = async (targetEmail: string, amount: number) => {
     try {
-      const res = await fetch('/api/v1/admin/send-coins', {
+      const res = await safeFetch('/api/v1/admin/send-coins', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -115,7 +116,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
           amount
         })
       });
-      const data = await res.json();
+      const data = res.data;
       if (data.status === 'success') {
         setActionSuccessMsg(`Added +${amount} Nexus Coins to ${targetEmail}!`);
         setSelectedUserEmail(null);
@@ -129,7 +130,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
 
   const handleToggleBan = async (targetEmail: string, banAction: 'ban' | 'unban', reason?: string) => {
     try {
-      const res = await fetch('/api/v1/admin/ban-toggle', {
+      const res = await safeFetch('/api/v1/admin/ban-toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -139,7 +140,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
           reason
         })
       });
-      const data = await res.json();
+      const data = res.data;
       if (data.status === 'success') {
         setActionSuccessMsg(`User ${targetEmail} status updated to ${banAction.toUpperCase()}!`);
         setBanUserEmail(null);

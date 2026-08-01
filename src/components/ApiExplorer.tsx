@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { safeFetch } from '../lib/api';
 import { 
   NEXUS_ENDPOINTS, 
   CODE_SNIPPETS 
@@ -134,7 +135,7 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
           apiKey: selectedApiKey,
           ...paramValues
         };
-        const res = await fetch(selectedEndpoint.path, {
+        const fetchRes = await safeFetch(selectedEndpoint.path, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -144,9 +145,9 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
           body: JSON.stringify(payload)
         });
         
-        responseData = await res.json();
-        status = res.status;
-        statusText = res.statusText;
+        responseData = fetchRes.data;
+        status = fetchRes.status;
+        statusText = fetchRes.ok ? 'OK' : 'Response Error';
       } else if (selectedEndpoint.method === 'GET') {
         const paramsToSend = {
           apiKey: selectedApiKey,
@@ -154,16 +155,16 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
         };
         const queryParams = new URLSearchParams(paramsToSend).toString();
         const url = queryParams ? `${selectedEndpoint.path}?${queryParams}` : selectedEndpoint.path;
-        const res = await fetch(url, {
+        const fetchRes = await safeFetch(url, {
           headers: {
             'x-api-key': selectedApiKey,
             'Authorization': `Bearer ${selectedApiKey}`
           }
         });
         
-        responseData = await res.json();
-        status = res.status;
-        statusText = res.statusText;
+        responseData = fetchRes.data;
+        status = fetchRes.status;
+        statusText = fetchRes.ok ? 'OK' : 'Response Error';
       }
 
       const duration = Math.round(performance.now() - startTime);

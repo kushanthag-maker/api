@@ -209,10 +209,11 @@ export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
       }
 
       let responseData: any;
+      const rawText = await res.text();
       try {
-        responseData = await res.json();
+        responseData = JSON.parse(rawText);
       } catch (e) {
-        responseData = { status: 'completed', text: await res.text() };
+        responseData = { status: res.ok ? 'completed' : 'error', responseText: rawText || 'Non-JSON server response' };
       }
 
       const duration = Math.round(performance.now() - startTime);
