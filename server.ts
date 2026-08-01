@@ -1297,69 +1297,78 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
 
   // 11.1 Google Sign-In & Email Verification Endpoint
   app.post('/api/v1/auth/google-verify', (req: express.Request, res: express.Response) => {
-    const { email, name, googleId, avatar } = req.body || {};
+    try {
+      const { email, name, googleId, avatar } = req.body || {};
 
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Invalid email address provided.'
-      });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const domain = cleanEmail.split('@')[1];
-
-    // Check for fake/disposable email domain
-    if (DISPOSABLE_EMAIL_DOMAINS.includes(domain)) {
-      return res.status(403).json({
-        status: 'error',
-        is_disposable: true,
-        message: 'Fake or disposable email domain detected! Only genuine Google or verified email accounts are permitted on APINexus.'
-      });
-    }
-
-    // Check if user is currently banned
-    const banRecord = bannedUsersStore[cleanEmail];
-    if (banRecord && banRecord.status === 'banned') {
-      return res.status(403).json({
-        status: 'banned',
-        email: cleanEmail,
-        reason: banRecord.reason,
-        dateBanned: banRecord.dateBanned,
-        message: 'Your Google Account has been banned from APINexus for a rule violation. You may submit an unban appeal to Nexus AI.',
-        can_appeal: true
-      });
-    }
-
-    // Initialize coin balance if new user
-    if (userCoinsStore[cleanEmail] === undefined) {
-      userCoinsStore[cleanEmail] = 250; // Welcome 250 Nexus Coins
-    }
-
-    // Auto-generate API key for Google account
-    if (!userApiKeysStore[cleanEmail]) {
-      userApiKeysStore[cleanEmail] = `nk_live_${cleanEmail.split('@')[0]}_${crypto.randomBytes(6).toString('hex')}`;
-    }
-
-    const userCards = userDataCardsStore[cleanEmail] || [];
-
-    // Return verified profile state
-    return res.json({
-      status: 'success',
-      authenticated: true,
-      user: {
-        email: cleanEmail,
-        name: name || cleanEmail.split('@')[0],
-        avatar: avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${cleanEmail}`,
-        googleId: googleId || `goog_${crypto.randomBytes(8).toString('hex')}`,
-        apiKey: userApiKeysStore[cleanEmail],
-        isVerifiedGoogleAccount: domain === 'gmail.com' || true,
-        role: 'developer',
-        tier: 'Nexus Pro Member',
-        coinsBalance: userCoinsStore[cleanEmail],
-        activeDataCards: userCards.map(c => c.title)
+      if (!email || typeof email !== 'string' || !email.includes('@')) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Invalid email address provided.'
+        });
       }
-    });
+
+      const cleanEmail = email.trim().toLowerCase();
+      const domain = cleanEmail.split('@')[1] || 'gmail.com';
+
+      // Check for fake/disposable email domain
+      if (DISPOSABLE_EMAIL_DOMAINS.includes(domain)) {
+        return res.status(403).json({
+          status: 'error',
+          is_disposable: true,
+          message: 'Fake or disposable email domain detected! Only genuine Google or verified email accounts are permitted on APINexus.'
+        });
+      }
+
+      // Check if user is currently banned
+      const banRecord = bannedUsersStore[cleanEmail];
+      if (banRecord && banRecord.status === 'banned') {
+        return res.status(403).json({
+          status: 'banned',
+          email: cleanEmail,
+          reason: banRecord.reason,
+          dateBanned: banRecord.dateBanned,
+          message: 'Your Google Account has been banned from APINexus for a rule violation. You may submit an unban appeal to Nexus AI.',
+          can_appeal: true
+        });
+      }
+
+      // Initialize coin balance if new user
+      if (userCoinsStore[cleanEmail] === undefined) {
+        userCoinsStore[cleanEmail] = 250; // Welcome 250 Nexus Coins
+      }
+
+      // Auto-generate API key for Google account
+      if (!userApiKeysStore[cleanEmail]) {
+        const safeUserPrefix = cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+        userApiKeysStore[cleanEmail] = `nk_live_${safeUserPrefix}_${crypto.randomBytes(6).toString('hex')}`;
+      }
+
+      const userCards = userDataCardsStore[cleanEmail] || [];
+
+      // Return verified profile state
+      return res.json({
+        status: 'success',
+        authenticated: true,
+        user: {
+          email: cleanEmail,
+          name: name || cleanEmail.split('@')[0],
+          avatar: avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${cleanEmail}`,
+          googleId: googleId || `goog_${crypto.randomBytes(8).toString('hex')}`,
+          apiKey: userApiKeysStore[cleanEmail],
+          isVerifiedGoogleAccount: domain === 'gmail.com' || true,
+          role: 'developer',
+          tier: 'Nexus Pro Member',
+          coinsBalance: userCoinsStore[cleanEmail],
+          activeDataCards: userCards.map(c => typeof c === 'string' ? c : (c?.title || 'Data Card'))
+        }
+      });
+    } catch (err: any) {
+      console.error('google-verify server error:', err);
+      return res.status(500).json({
+        status: 'error',
+        message: err?.message || 'Server authentication error.'
+      });
+    }
   });
 
   // 11.2 Coin Balance & Top Up Endpoints
