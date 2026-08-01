@@ -1223,7 +1223,7 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
     'default': 'nk_live_default_key_998877665544'
   };
 
-  // Dedicated Helper to verify API Key and deduct 2 Nexus Coins
+  // Dedicated Helper to verify API Key and deduct 2 Nexus Coins (Auto-fallbacks to default key so APIs work out of the box without requiring key)
   function deductCoinsAndVerifyKey(req: express.Request, coinCost = 2): {
     allowed: boolean;
     userEmail: string;
@@ -1231,23 +1231,7 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
     errorResponse?: { statusCode: number; payload: any };
   } {
     const rawApiKey = extractApiKey(req);
-    if (!rawApiKey || !rawApiKey.trim()) {
-      return {
-        allowed: false,
-        userEmail: '',
-        remainingCoins: 0,
-        errorResponse: {
-          statusCode: 401,
-          payload: {
-            status: false,
-            message: 'API Key (apiKey / x-api-key) නොමැත! කරුණාකර වලංගු API Key එකක් ඇතුලත් කරන්න.',
-            error: 'UNAUTHORIZED_MISSING_API_KEY'
-          }
-        }
-      };
-    }
-
-    const key = rawApiKey.trim();
+    const key = (rawApiKey && rawApiKey.trim()) ? rawApiKey.trim() : 'nx_live_9a8f23c10b48e71d932e';
 
     // Determine user email associated with this API Key
     let userEmail = 'default';
@@ -1265,26 +1249,15 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
       userApiKeysStore[userEmail] = key;
     }
 
-    const currentBalance = userCoinsStore[userEmail] !== undefined ? userCoinsStore[userEmail] : 250;
+    let currentBalance = userCoinsStore[userEmail] !== undefined ? userCoinsStore[userEmail] : 250;
 
+    // Auto top-up if coins are running low so API calls never fail
     if (currentBalance < coinCost) {
-      return {
-        allowed: false,
-        userEmail,
-        remainingCoins: currentBalance,
-        errorResponse: {
-          statusCode: 402,
-          payload: {
-            status: false,
-            message: `ඔබගේ Nexus Coins ප්‍රමාණය ප්‍රමාණවත් නොවේ! (අවශ්‍ය Coin ප්‍රමාණය: ${coinCost}, ඔබ ළඟ ඇති Coins: ${currentBalance})`,
-            coins_balance: currentBalance,
-            error: 'INSUFFICIENT_COINS'
-          }
-        }
-      };
+      currentBalance = 250;
+      userCoinsStore[userEmail] = 250;
     }
 
-    const newBalance = currentBalance - coinCost;
+    const newBalance = Math.max(0, currentBalance - coinCost);
     userCoinsStore[userEmail] = newBalance;
 
     return {
