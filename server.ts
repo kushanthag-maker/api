@@ -4,7 +4,6 @@ import crypto from 'crypto';
 import cors from 'cors';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { GoogleGenAI } from '@google/genai';
 
 let ytdlModule: any = null;
 async function getYtdl() {
@@ -19,11 +18,19 @@ async function getYtdl() {
   return ytdlModule;
 }
 
-// Initialize Gemini AI lazily if key exists
-let aiClient: GoogleGenAI | null = null;
-function getGenAI() {
-  if (!aiClient && process.env.GEMINI_API_KEY) {
-    aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Initialize Gemini AI dynamically & lazily if key exists
+let aiClient: any = null;
+async function getGenAI() {
+  if (!aiClient) {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (apiKey) {
+        const { GoogleGenAI } = await import('@google/genai');
+        aiClient = new GoogleGenAI({ apiKey });
+      }
+    } catch (e) {
+      console.warn('GoogleGenAI dynamic import fallback:', e);
+    }
   }
   return aiClient;
 }
@@ -317,7 +324,7 @@ export function buildApp(): express.Application {
     const startTime = Date.now();
 
     try {
-      const ai = getGenAI();
+      const ai = await getGenAI();
       if (ai) {
         const sysPrompt = `You are an expert principal software architect and senior code generator.
 Generate clean, complete, robust, runnable production source code for the following request:
@@ -390,7 +397,7 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
     const startTime = Date.now();
 
     try {
-      const ai = getGenAI();
+      const ai = await getGenAI();
       if (ai) {
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
@@ -599,7 +606,7 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
 
     const startTime = Date.now();
     try {
-      const ai = getGenAI();
+      const ai = await getGenAI();
       if (ai) {
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
