@@ -31,7 +31,7 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
   onUpdateUser,
   onOpenNexusAi,
 }) => {
-  const [activeTab, setActiveTab] = useState<'datacards' | 'buycoins'>('datacards');
+  const [activeTab, setActiveTab] = useState<'datacards' | 'buycoins' | 'referral'>('datacards');
   const [coinsBalance, setCoinsBalance] = useState<number>(currentUser?.coinsBalance ?? 250);
   const [userCards, setUserCards] = useState<any[]>([]);
   const [datacardCatalog, setDatacardCatalog] = useState<DataCard[]>([]);
@@ -39,6 +39,15 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [purchasingCardId, setPurchasingCardId] = useState<string | null>(null);
   const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
+  const [claimingDaily, setClaimingDaily] = useState<boolean>(false);
+  const [referralInfo, setReferralInfo] = useState<{
+    code: string;
+    link: string;
+    referredCount: number;
+    totalEarned: number;
+  } | null>(null);
+  const [inputRefCode, setInputRefCode] = useState<string>('');
+  const [redeemingRef, setRedeemingRef] = useState<boolean>(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const email = currentUser?.email || 'kushanthag@gmail.com';
@@ -72,10 +81,85 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
         if (dataCatalog.catalog) setDatacardCatalog(dataCatalog.catalog);
         if (dataCatalog.userPurchasedCards) setUserCards(dataCatalog.userPurchasedCards);
       }
+
+      fetchReferralInfo();
     } catch (err) {
       console.error('Error loading coins/cards data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReferralInfo = async () => {
+    try {
+      const res = await fetch(`/api/v1/referral/info?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      if (data.status === 'success') {
+        setReferralInfo({
+          code: data.referralCode,
+          link: data.referralLink,
+          referredCount: data.referredCount,
+          totalEarned: data.totalBonusCoinsEarned
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching referral info:', err);
+    }
+  };
+
+  const handleClaimDailyFreeCoins = async () => {
+    setClaimingDaily(true);
+    setNotification(null);
+    try {
+      const res = await fetch('/api/v1/coins/daily-claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setCoinsBalance(data.newCoinsBalance);
+        setNotification({ type: 'success', message: data.message });
+        if (currentUser) {
+          onUpdateUser({ ...currentUser, coinsBalance: data.newCoinsBalance });
+        }
+      } else {
+        setNotification({ type: 'error', message: data.message || 'Daily free limit reached.' });
+      }
+    } catch (err) {
+      setNotification({ type: 'error', message: 'Failed to claim daily free coins.' });
+    } finally {
+      setClaimingDaily(false);
+    }
+  };
+
+  const handleRedeemReferralCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputRefCode.trim()) return;
+    setRedeemingRef(true);
+    setNotification(null);
+    try {
+      const res = await fetch('/api/v1/referral/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, refCode: inputRefCode.trim() })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setCoinsBalance(data.newCoinsBalance);
+        setNotification({ type: 'success', message: data.message });
+        setInputRefCode('');
+        fetchReferralInfo();
+        if (currentUser) {
+          onUpdateUser({ ...currentUser, coinsBalance: data.newCoinsBalance });
+        }
+      } else {
+        setNotification({ type: 'error', message: data.message || 'Failed to redeem code.' });
+      }
+    } catch (err) {
+      setNotification({ type: 'error', message: 'Network error redeeming referral code.' });
+    } finally {
+      setRedeemingRef(false);
     }
   };
 
@@ -223,6 +307,17 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
               Buy / Top-Up Coins
             </button>
             <button
+              onClick={() => setActiveTab('referral')}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition ${
+                activeTab === 'referral'
+                  ? 'border-cyan-400 text-cyan-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Gift className="w-4 h-4 text-cyan-400" />
+              Free Coins & Referrals
+            </button>
+            <button
               onClick={() => {
                 onClose();
                 onOpenNexusAi();
@@ -230,7 +325,7 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
               className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-lg transition"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Ask Nexus AI to Gift/Buy
+              Ask Nexus AI
             </button>
           </div>
         </div>
@@ -426,11 +521,153 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
                     onClose();
                     onOpenNexusAi();
                   }}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg whitespace-nowrap transition flex items-center gap-1.5"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg whitespace-nowrap transition flex items-center gap-1.5 cursor-pointer"
                 >
                   Open Nexus AI Control
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Referral & Free Daily Coins Tab Content */}
+          {activeTab === 'referral' && (
+            <div className="space-y-6">
+              {/* Daily Free Reward Section */}
+              <div className="bg-gradient-to-r from-amber-950/40 via-slate-900 to-indigo-950/40 border border-amber-500/30 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-amber-500/20 border border-amber-500/40 rounded-2xl text-amber-400">
+                    <Coins className="w-8 h-8 animate-spin" style={{ animationDuration: '8s' }} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-extrabold text-white">Nexus AI Daily Free Reward</h3>
+                      <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30 uppercase">
+                        Max 5 Coins / Day
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-1 max-w-lg">
+                      Claim your free daily allocation of <strong>5 Nexus Coins</strong> every 24 hours. (To prevent abuse, daily free coins are strictly capped at 5 coins per day).
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleClaimDailyFreeCoins}
+                  disabled={claimingDaily}
+                  className="w-full md:w-auto px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                >
+                  {claimingDaily ? (
+                    <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Gift className="w-4 h-4" />
+                      Claim +5 Free Coins Today
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Referral Link Engine */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Your Referral Link Box */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs uppercase tracking-wider">
+                    <Gift className="w-4 h-4 text-cyan-400" />
+                    <span>Your Unique Referral Link</span>
+                  </div>
+
+                  <p className="text-xs text-slate-300">
+                    Share your referral link with friends. Whenever someone joins APINexus using your code, <strong>both of you get +50 Bonus Nexus Coins!</strong>
+                  </p>
+
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+                    <div className="text-[10px] text-slate-400 uppercase font-bold">Referral Code:</div>
+                    <div className="text-sm font-mono font-black text-amber-400 tracking-wider">
+                      {referralInfo?.code || 'NEXUS-LOADING...'}
+                    </div>
+
+                    <div className="text-[10px] text-slate-400 uppercase font-bold pt-2">Full Share Link:</div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={referralInfo?.link || 'https://apinexus.dev/join?ref=...'}
+                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-cyan-300 focus:outline-none"
+                      />
+                      <button
+                        onClick={() => {
+                          if (referralInfo?.link) {
+                            navigator.clipboard.writeText(referralInfo.link);
+                            setNotification({ type: 'success', message: '📋 Referral link copied to clipboard!' });
+                          }
+                        }}
+                        className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition shrink-0 cursor-pointer"
+                      >
+                        Copy Link
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-center pt-2">
+                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                      <div className="text-lg font-black text-white">{referralInfo?.referredCount || 0}</div>
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">Friends Joined</div>
+                    </div>
+                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                      <div className="text-lg font-black text-amber-400">{referralInfo?.totalEarned || 0}</div>
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">Coins Earned</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Redeem Friend's Code Box */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <span>Redeem Friend's Referral Code</span>
+                    </div>
+
+                    <p className="text-xs text-slate-300">
+                      Have a referral code from a friend or creator? Enter it below to instantly claim your <strong>+50 Bonus Nexus Coins!</strong>
+                    </p>
+
+                    <form onSubmit={handleRedeemReferralCode} className="space-y-3 pt-2">
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">
+                          Enter Referral Code:
+                        </label>
+                        <input
+                          type="text"
+                          value={inputRefCode}
+                          onChange={(e) => setInputRefCode(e.target.value)}
+                          placeholder="e.g. NEXUS-KUSH-99"
+                          className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 font-mono focus:border-emerald-500 focus:outline-none"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={redeemingRef || !inputRefCode.trim()}
+                        className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {redeemingRef ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Gift className="w-4 h-4" />
+                            Redeem Code (+50 Coins)
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="p-3 bg-indigo-950/30 border border-indigo-500/20 rounded-xl text-[11px] text-slate-400">
+                    💡 <strong>Pro Tip:</strong> Coins can be used in the <strong>Data Cards Vault</strong> to purchase high-speed API data packages and quota passes!
+                  </div>
+                </div>
               </div>
             </div>
           )}

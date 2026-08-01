@@ -104,7 +104,13 @@ export const NexusAiControlModal: React.FC<NexusAiControlModalProps> = ({
         })
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        data = { reply: text || 'Nexus AI internal response error.' };
+      }
 
       if (data.new_balance !== undefined && onUpdateUserCoins) {
         onUpdateUserCoins(data.new_balance);

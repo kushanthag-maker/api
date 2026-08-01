@@ -59,7 +59,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         })
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        data = { message: text || 'Server authentication response error.' };
+      }
 
       if (res.status === 403) {
         if (data.status === 'banned') {
