@@ -1011,7 +1011,7 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
   app.post('/api/v1/web/audit', handleWebAudit);
   app.get('/api/v1/web/audit', handleWebAudit);
 
-  // 9. YouTube Video & Song Search/Download API (/api/v1/yt/search, /api/v1/song/search, /api/v1/yt/download, /api/v1/song/download, /api/v1/utility/youtube-download, /api/ytdl)
+  // 9. YouTube Video & Song Search/Download API (/search, /download, /api/v1/yt/search, /api/v1/song/search, /api/v1/yt/download, /api/v1/song/download, /api/v1/utility/youtube-download, /api/ytdl)
   
   // YouTube & Song Search Endpoint
   const handleYtSearch = async (req: express.Request, res: express.Response) => {
@@ -1037,26 +1037,77 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
         timeout: 10000
       });
 
-      const videoIds: string[] = [];
-      const idMatches = data.match(/\"videoId\":\"([a-zA-Z0-9_-]{11})\"/g);
-      if (idMatches) {
-        for (const m of idMatches) {
-          const id = m.replace('\"videoId\":\"', '').replace('\"', '');
-          if (!videoIds.includes(id) && videoIds.length < 10) {
-            videoIds.push(id);
+      const results: Array<{
+        id: string;
+        title: string;
+        url: string;
+        duration: string;
+        uploader: string;
+        thumbnail: string;
+        mp4_download: string;
+        mp3_download: string;
+      }> = [];
+
+      // Extract video items using videoRenderer JSON pattern
+      const videoRendererRegex = /"videoRenderer":\{"videoId":"([a-zA-Z0-9_-]{11})"(.*?)"title":\{"runs":\[\{"text":"([^"]+)"\}/g;
+      let match;
+      const seenIds = new Set<string>();
+
+      while ((match = videoRendererRegex.exec(data)) !== null && results.length < 10) {
+        const id = match[1];
+        if (seenIds.has(id)) continue;
+        seenIds.add(id);
+
+        let titleStr = match[3] || `${qClean} Track #${results.length + 1}`;
+        try { titleStr = JSON.parse(`"${titleStr}"`); } catch (e) {}
+
+        const block = match[2] || '';
+        let uploader = 'YouTube Creator';
+        const uploaderMatch = block.match(/"longBylineText":\{"runs":\[\{"text":"([^"]+)"/);
+        if (uploaderMatch && uploaderMatch[1]) {
+          try { uploader = JSON.parse(`"${uploaderMatch[1]}"`); } catch (e) { uploader = uploaderMatch[1]; }
+        }
+
+        let duration = '03:45';
+        const durMatch = block.match(/"lengthText":\{[^}]*"simpleText":"([^"]+)"/);
+        if (durMatch && durMatch[1]) {
+          duration = durMatch[1];
+        }
+
+        results.push({
+          id,
+          title: titleStr,
+          url: `https://www.youtube.com/watch?v=${id}`,
+          duration,
+          uploader,
+          thumbnail: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+          mp4_download: `${hostDomain}/dl/stream/${id}?fmt=mp4&quality=720p`,
+          mp3_download: `${hostDomain}/dl/stream/${id}?fmt=mp3&quality=320k`
+        });
+      }
+
+      // Fallback ID matcher
+      if (results.length < 3) {
+        const idMatches = data.match(/\"videoId\":\"([a-zA-Z0-9_-]{11})\"/g);
+        if (idMatches) {
+          for (const m of idMatches) {
+            const id = m.replace('\"videoId\":\"', '').replace('\"', '');
+            if (!seenIds.has(id) && results.length < 10) {
+              seenIds.add(id);
+              results.push({
+                id,
+                title: `${qClean} Track #${results.length + 1}`,
+                url: `https://www.youtube.com/watch?v=${id}`,
+                duration: '03:45',
+                uploader: 'YouTube Creator',
+                thumbnail: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+                mp4_download: `${hostDomain}/dl/stream/${id}?fmt=mp4&quality=720p`,
+                mp3_download: `${hostDomain}/dl/stream/${id}?fmt=mp3&quality=320k`
+              });
+            }
           }
         }
       }
-
-      const results = videoIds.map((id, index) => ({
-        id,
-        title: `${qClean} - YouTube Result #${index + 1}`,
-        url: `https://www.youtube.com/watch?v=${id}`,
-        thumbnail: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
-        uploader: 'YouTube Creator',
-        mp4_download: `${hostDomain}/dl/stream/${id}?fmt=mp4&quality=720p`,
-        mp3_download: `${hostDomain}/dl/stream/${id}?fmt=mp3&quality=320k`
-      }));
 
       res.json({
         status: true,
@@ -1075,11 +1126,19 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
     }
   };
 
+  // Route bindings for Search (Python script compatibility & APINexus standard)
+  app.get('/search', handleYtSearch);
+  app.post('/search', handleYtSearch);
   app.get('/api/v1/yt/search', handleYtSearch);
   app.post('/api/v1/yt/search', handleYtSearch);
+  app.get('/api/v1/youtube/search', handleYtSearch);
+  app.post('/api/v1/youtube/search', handleYtSearch);
   app.get('/api/v1/song/search', handleYtSearch);
   app.post('/api/v1/song/search', handleYtSearch);
+  app.get('/api/v1/music/search', handleYtSearch);
+  app.post('/api/v1/music/search', handleYtSearch);
 
+  // YouTube & Song Download Endpoint
   const handleYoutubeDownload = async (req: express.Request, res: express.Response) => {
     const authCheck = deductCoinsAndVerifyKey(req, 2);
     if (!authCheck.allowed && authCheck.errorResponse) {
@@ -1138,7 +1197,7 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
     const expiryDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     const mp4StreamUrl = `${hostDomain}/dl/stream/${videoId}?quality=720p&fmt=mp4`;
     const mp3StreamUrl = `${hostDomain}/dl/stream/${videoId}?quality=320k&fmt=mp3`;
-    const primaryDownload = format === 'mp3' ? mp3StreamUrl : mp4StreamUrl;
+    const primaryDownload = format.toLowerCase() === 'mp3' ? mp3StreamUrl : mp4StreamUrl;
 
     res.json({
       status: 'success',
@@ -1158,6 +1217,7 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
       youtube_embed_url: `https://www.youtube.com/embed/${videoId}`,
       requested_quality: quality,
       requested_format: format,
+      download_url: primaryDownload,
       primary_download_url: primaryDownload,
       download_streams: [
         {
@@ -1201,12 +1261,19 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
     });
   };
 
+  // Route bindings for Download (Python script compatibility & APINexus standard)
+  app.get('/download', handleYoutubeDownload);
+  app.post('/download', handleYoutubeDownload);
   app.post('/api/v1/utility/youtube-download', handleYoutubeDownload);
   app.get('/api/v1/utility/youtube-download', handleYoutubeDownload);
   app.get('/api/v1/yt/download', handleYoutubeDownload);
   app.post('/api/v1/yt/download', handleYoutubeDownload);
+  app.get('/api/v1/youtube/download', handleYoutubeDownload);
+  app.post('/api/v1/youtube/download', handleYoutubeDownload);
   app.get('/api/v1/song/download', handleYoutubeDownload);
   app.post('/api/v1/song/download', handleYoutubeDownload);
+  app.get('/api/v1/music/download', handleYoutubeDownload);
+  app.post('/api/v1/music/download', handleYoutubeDownload);
   app.get('/api/ytdl', handleYoutubeDownload);
   app.post('/api/ytdl', handleYoutubeDownload);
 
@@ -1446,7 +1513,7 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
       });
 
       const $ = cheerio.load(data);
-      let newsList: Array<{ id: string; title: string; time: string; image: string | null; url: string; category: string }> = [];
+      let newsList: Array<{ id: string; title: string; time: string; image: string | null; url: string; category: string; detail_api_url?: string }> = [];
 
       $('.news-story').each((index, element) => {
         const title = $(element).find('.story-text h2 a, .story-text a, a').first().text().trim();
@@ -1466,13 +1533,15 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
 
         if (title && newsList.length < 20) {
           const newsId = rawLink ? rawLink.replace(/[^a-zA-Z0-9]/g, '_') : `news_${index}`;
+          const hostDomain = getHostDomain(req);
           newsList.push({
             id: newsId,
             title,
             time: relativeTime || 'Just Now',
             image: fullImage,
             url: fullLink,
-            category: category.toUpperCase()
+            category: category.toUpperCase(),
+            detail_api_url: `${hostDomain}/api/v1/news/detail?url=${encodeURIComponent(fullLink)}`
           });
         }
       });
@@ -1545,26 +1614,48 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
 
       const timeStamp = $('.news-story span, .story-text span, .time, .date').first().text().trim() || 'Today';
 
-      let fullDescription = '';
-      const contentBlock = $('.story-text, .news-story, .news-content, article, main').first();
+      const paragraphs: string[] = [];
+      
+      // Target news content container across Ada Derana templates
+      const contentContainer = $('.news-content, .story-text, .news-story, #news-story, article, main').first();
 
-      if (contentBlock.length > 0) {
-        const clonedBlock = contentBlock.clone();
-        clonedBlock.find('h1, script, style, header, footer, nav, .social-share, .comments, iframe').remove();
+      if (contentContainer.length > 0) {
+        const cloned = contentContainer.clone();
+        cloned.find('h1, script, style, header, footer, nav, .social-share, .comments, iframe, .related-news').remove();
 
-        clonedBlock.find('p').each((_i, el) => {
+        cloned.find('p').each((_i, el) => {
           const txt = $(el).text().trim();
-          if (txt.length > 0) fullDescription += txt + '\n\n';
+          if (txt.length > 10 && !paragraphs.includes(txt)) {
+            paragraphs.push(txt);
+          }
         });
 
-        if (!fullDescription.trim()) {
-          fullDescription = clonedBlock.text().trim();
+        if (paragraphs.length === 0) {
+          const rawTxt = cloned.text().trim();
+          if (rawTxt) {
+            rawTxt.split('\n').forEach(line => {
+              const cleaned = line.trim();
+              if (cleaned.length > 15 && !paragraphs.includes(cleaned)) {
+                paragraphs.push(cleaned);
+              }
+            });
+          }
         }
       }
 
-      if (!fullDescription.trim()) {
-        fullDescription = 'අද දෙරණ පුවත් සේවය මගින් වාර්තා කරන ලද සජීව පුවත් තොරතුරු.';
+      // Universal paragraph fallback
+      if (paragraphs.length === 0) {
+        $('p').each((_i, el) => {
+          const txt = $(el).text().trim();
+          if (txt.length > 20 && !txt.includes('Copyright') && !paragraphs.includes(txt)) {
+            paragraphs.push(txt);
+          }
+        });
       }
+
+      const fullArticle = paragraphs.length > 0 
+        ? paragraphs.join('\n\n')
+        : 'අද දෙරණ පුවත් සේවය මගින් වාර්තා කරන ලද සජීව පුවත් තොරතුරු.';
 
       res.json({
         status: true,
@@ -1574,7 +1665,10 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
         timestamp: timeStamp,
         image: mainImage,
         url: targetUrl,
-        full_news: fullDescription.trim()
+        paragraphs,
+        full_article: fullArticle.trim(),
+        full_news: fullArticle.trim(),
+        article_content: fullArticle.trim()
       });
     } catch (error: any) {
       res.status(500).json({
