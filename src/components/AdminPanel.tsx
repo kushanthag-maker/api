@@ -55,6 +55,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
   const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(null);
   const [coinsToSend, setCoinsToSend] = useState<number>(500);
 
+  // Promo Code State
+  const [promoCodes, setPromoCodes] = useState<any[]>([]);
+  const [promoCoinAmount, setPromoCoinAmount] = useState<number>(100);
+  const [promoCodeName, setPromoCodeName] = useState<string>('');
+  const [generatingPromo, setGeneratingPromo] = useState<boolean>(false);
+
+  // Bug Reports State
+  const [bugReports, setBugReports] = useState<any[]>([]);
+
   // Ban Modal State
   const [banUserEmail, setBanUserEmail] = useState<string | null>(null);
   const [banReasonInput, setBanReasonInput] = useState<string>('Platform rule violation.');
@@ -62,6 +71,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
   useEffect(() => {
     if (isAuthenticated) {
       fetchAdminData();
+      fetchPromoCodes();
+      fetchBugReports();
     }
   }, [isAuthenticated]);
 
@@ -126,6 +137,76 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
       }
     } catch (err) {
       alert('Failed to send coins.');
+    }
+  };
+
+  const fetchPromoCodes = async () => {
+    try {
+      const res = await fetch('/api/v1/admin/promo-codes');
+      const data = await res.json();
+      if (data.status) {
+        setPromoCodes(data.codes || []);
+      }
+    } catch (e) {
+      console.warn('Failed to load promo codes', e);
+    }
+  };
+
+  const fetchBugReports = async () => {
+    try {
+      const res = await fetch('/api/v1/report/list');
+      const data = await res.json();
+      if (data.status) {
+        setBugReports(data.reports || []);
+      }
+    } catch (e) {
+      console.warn('Failed to load bug reports', e);
+    }
+  };
+
+  const handleGeneratePromoCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGeneratingPromo(true);
+    try {
+      const res = await fetch('/api/v1/admin/generate-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminPassword: 'NexusAdmin#2026!SecureKey',
+          coinAmount: promoCoinAmount,
+          codeName: promoCodeName,
+          maxUses: 100
+        })
+      });
+      const data = await res.json();
+      if (data.status) {
+        setActionSuccessMsg(`Generated Promo Code '${data.code}' for ${data.coinAmount} Coins!`);
+        setPromoCodeName('');
+        fetchPromoCodes();
+      } else {
+        alert(data.message || 'Failed to generate promo code');
+      }
+    } catch (err) {
+      alert('Error generating promo code');
+    } finally {
+      setGeneratingPromo(false);
+    }
+  };
+
+  const handleUpdateReportStatus = async (reportId: string, status: string) => {
+    try {
+      const res = await fetch('/api/v1/report/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId, status })
+      });
+      const data = await res.json();
+      if (data.status) {
+        setActionSuccessMsg(`Updated Bug Report '${reportId}' status to ${status}!`);
+        fetchBugReports();
+      }
+    } catch (err) {
+      alert('Failed to update report status');
     }
   };
 
@@ -437,6 +518,190 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
           </table>
         </div>
 
+      </div>
+
+      {/* Promo Code Generator & Active Codes Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Promo Code Generator Card */}
+        <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-base font-bold text-white font-mono flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-400" />
+              <span>Generate Promo Code</span>
+            </h2>
+            <p className="text-xs text-slate-400">
+              Create redeemable coin promo codes stored in MongoDB Atlas.
+            </p>
+          </div>
+
+          <form onSubmit={handleGeneratePromoCode} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300">Coin Reward Amount</label>
+              <input
+                type="number"
+                value={promoCoinAmount}
+                onChange={(e) => setPromoCoinAmount(Number(e.target.value))}
+                className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300">Custom Code Name (Optional)</label>
+              <input
+                type="text"
+                value={promoCodeName}
+                onChange={(e) => setPromoCodeName(e.target.value)}
+                placeholder="e.g. SPECIAL-100-BONUS"
+                className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-500 font-mono uppercase"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={generatingPromo}
+              className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer font-mono"
+            >
+              {generatingPromo ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              <span>{generatingPromo ? 'Generating...' : 'Create Promo Code'}</span>
+            </button>
+          </form>
+        </div>
+
+        {/* Promo Codes List */}
+        <div className="lg:col-span-2 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-white font-mono">
+                Active & Generated Promo Codes
+              </h2>
+              <p className="text-xs text-slate-400">Stored in MongoDB Atlas collection `promo_codes`</p>
+            </div>
+            <button
+              onClick={fetchPromoCodes}
+              className="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-mono cursor-pointer"
+            >
+              Refresh
+            </button>
+          </div>
+
+          <div className="overflow-x-auto border border-slate-800 rounded-xl">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="bg-slate-950 text-slate-400 font-mono uppercase text-[10px]">
+                <tr>
+                  <th className="p-3">Promo Code</th>
+                  <th className="p-3">Coin Value 🪙</th>
+                  <th className="p-3">Usage / Max</th>
+                  <th className="p-3">Created</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {promoCodes.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-6 text-center text-slate-500 font-mono">
+                      No promo codes generated yet. Use generator to create one.
+                    </td>
+                  </tr>
+                ) : (
+                  promoCodes.map((pc) => (
+                    <tr key={pc.code} className="hover:bg-slate-800/30">
+                      <td className="p-3 font-mono font-bold text-amber-400">{pc.code}</td>
+                      <td className="p-3 font-mono text-emerald-400">+{pc.coinAmount} Coins</td>
+                      <td className="p-3 font-mono text-slate-400">{pc.usedCount || 0} / {pc.maxUses || 100}</td>
+                      <td className="p-3 font-mono text-slate-500 text-[10px]">
+                        {pc.createdAt ? new Date(pc.createdAt).toLocaleDateString() : 'Recent'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Bug & Issue Reports Section */}
+      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+              <FileText className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white font-mono">
+                Submitted Bug & Issue Reports ({bugReports.length})
+              </h2>
+              <p className="text-xs text-slate-400">User bug reports saved in MongoDB Atlas collection `bug_reports`</p>
+            </div>
+          </div>
+
+          <button
+            onClick={fetchBugReports}
+            className="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-mono cursor-pointer"
+          >
+            Refresh Reports
+          </button>
+        </div>
+
+        <div className="overflow-x-auto border border-slate-800 rounded-xl">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-950 text-slate-400 font-mono uppercase text-[10px]">
+              <tr>
+                <th className="p-3">Reporter</th>
+                <th className="p-3">Category</th>
+                <th className="p-3">Title & Description</th>
+                <th className="p-3">Status</th>
+                <th className="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {bugReports.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-6 text-center text-slate-500 font-mono">
+                    No user bug reports submitted yet.
+                  </td>
+                </tr>
+              ) : (
+                bugReports.map((report) => (
+                  <tr key={report.id} className="hover:bg-slate-800/30">
+                    <td className="p-3 font-mono text-cyan-300">{report.email}</td>
+                    <td className="p-3 font-mono text-amber-300">{report.category}</td>
+                    <td className="p-3 max-w-md">
+                      <div className="font-bold text-white">{report.title}</div>
+                      <div className="text-[11px] text-slate-400 line-clamp-2">{report.description}</div>
+                    </td>
+                    <td className="p-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        report.status === 'Resolved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                      }`}>
+                        {report.status || 'Open'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      {report.status === 'Resolved' ? (
+                        <button
+                          onClick={() => handleUpdateReportStatus(report.id, 'Open')}
+                          className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white text-[10px] cursor-pointer font-mono"
+                        >
+                          Reopen
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleUpdateReportStatus(report.id, 'Resolved')}
+                          className="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-[10px] cursor-pointer font-bold font-mono"
+                        >
+                          Mark Resolved
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal: Send Coins To User */}

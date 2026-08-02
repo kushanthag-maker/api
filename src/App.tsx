@@ -13,6 +13,9 @@ import { SiteRulesModal } from './components/SiteRulesModal';
 import { NexusAiControlModal } from './components/NexusAiControlModal';
 import { CoinsAndDataCardsModal } from './components/CoinsAndDataCardsModal';
 import { AdminPanel } from './components/AdminPanel';
+import { NewsExplorer } from './components/NewsExplorer';
+import { ReportIssueModal } from './components/ReportIssueModal';
+import { IntroAnimation } from './components/IntroAnimation';
 import { Footer } from './components/Footer';
 import { ApiKey, UserProfile } from './types';
 import { 
@@ -66,6 +69,10 @@ export default function App() {
   const [rulesModalOpen, setRulesModalOpen] = useState<boolean>(false);
   const [nexusAiModalOpen, setNexusAiModalOpen] = useState<boolean>(false);
   const [coinsModalOpen, setCoinsModalOpen] = useState<boolean>(false);
+  const [reportModalOpen, setReportModalOpen] = useState<boolean>(false);
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    return !sessionStorage.getItem('nexus_intro_shown');
+  });
 
   const [bannedEmailForAppeal, setBannedEmailForAppeal] = useState<string>('');
   const [bannedReasonForAppeal, setBannedReasonForAppeal] = useState<string>('');
@@ -148,6 +155,16 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-200 flex flex-col overflow-x-hidden max-w-full w-full">
       
+      {/* High-Tech Entrance Animation */}
+      {showIntro && (
+        <IntroAnimation
+          onComplete={() => {
+            setShowIntro(false);
+            sessionStorage.setItem('nexus_intro_shown', 'true');
+          }}
+        />
+      )}
+
       {/* Header Bar */}
       <Header
         activeTab={activeTab}
@@ -161,6 +178,7 @@ export default function App() {
         onOpenNexusAiModal={() => setNexusAiModalOpen(true)}
         onOpenRulesModal={() => setRulesModalOpen(true)}
         onOpenCoinsModal={() => setCoinsModalOpen(true)}
+        onOpenReportModal={() => setReportModalOpen(true)}
         coinsBalance={currentUser?.coinsBalance ?? 250}
       />
 
@@ -251,6 +269,8 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'news' && <NewsExplorer />}
+
         {activeTab === 'playground' && (
           <Playground activeKeys={activeKeys} />
         )}
@@ -335,6 +355,13 @@ export default function App() {
         onClose={() => setCoinsModalOpen(false)}
         currentUser={currentUser}
         onCoinsUpdated={handleUpdateUserCoins}
+      />
+
+      {/* Bug & Issue Reporting Modal */}
+      <ReportIssueModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        currentUser={currentUser}
       />
 
     </div>

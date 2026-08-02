@@ -18,7 +18,9 @@ import {
   LogOut,
   Sparkles,
   FileText,
-  Coins
+  Coins,
+  Newspaper,
+  Bug
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -33,6 +35,7 @@ interface HeaderProps {
   onOpenNexusAiModal: () => void;
   onOpenRulesModal: () => void;
   onOpenCoinsModal: () => void;
+  onOpenReportModal?: () => void;
   coinsBalance?: number;
 }
 
@@ -48,6 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNexusAiModal,
   onOpenRulesModal,
   onOpenCoinsModal,
+  onOpenReportModal,
   coinsBalance = 250
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -55,6 +59,7 @@ export const Header: React.FC<HeaderProps> = ({
   const navItems = [
     { id: 'overview', label: 'Overview', icon: Zap },
     { id: 'docs', label: 'API Reference', icon: BookOpen },
+    { id: 'news', label: 'News', icon: Newspaper },
     { id: 'playground', label: 'Console Sandbox', icon: Terminal },
     { id: 'keys', label: 'API Keys', icon: Key, badge: keyCount > 0 ? keyCount : undefined },
     { id: 'analytics', label: 'Telemetry', icon: BarChart2 },
@@ -128,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline text-[10px] uppercase font-semibold text-amber-300">Coins</span>
             </button>
 
-            {/* Rules Button */}
+            {/* Rules & Report Bug Buttons */}
             <button
               onClick={onOpenRulesModal}
               className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-medium transition-all cursor-pointer"
@@ -137,6 +142,17 @@ export const Header: React.FC<HeaderProps> = ({
               <FileText className="w-3.5 h-3.5 text-slate-400" />
               <span>Rules</span>
             </button>
+
+            {onOpenReportModal && (
+              <button
+                onClick={onOpenReportModal}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
+                title="Report Bug / Technical Issue"
+              >
+                <Bug className="w-3.5 h-3.5 text-rose-400" />
+                <span>Report Bug</span>
+              </button>
+            )}
 
             {/* Google Authentication Button / Profile */}
             {currentUser ? (

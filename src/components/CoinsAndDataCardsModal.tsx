@@ -49,6 +49,8 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
   } | null>(null);
   const [inputRefCode, setInputRefCode] = useState<string>('');
   const [redeemingRef, setRedeemingRef] = useState<boolean>(false);
+  const [inputPromoCode, setInputPromoCode] = useState<string>('');
+  const [redeemingPromo, setRedeemingPromo] = useState<boolean>(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const email = currentUser?.email || 'kushanthag@gmail.com';
@@ -131,6 +133,35 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
       setNotification({ type: 'error', message: 'Failed to claim daily free coins.' });
     } finally {
       setClaimingDaily(false);
+    }
+  };
+
+  const handleRedeemPromoCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputPromoCode.trim()) return;
+    setRedeemingPromo(true);
+    setNotification(null);
+    try {
+      const res = await safeFetch('/api/v1/coins/redeem-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, promoCode: inputPromoCode.trim() })
+      });
+      const data = res.data;
+      if (data.status === 'success') {
+        setCoinsBalance(data.newCoinsBalance);
+        setNotification({ type: 'success', message: data.message });
+        setInputPromoCode('');
+        if (currentUser) {
+          onUpdateUser({ ...currentUser, coinsBalance: data.newCoinsBalance });
+        }
+      } else {
+        setNotification({ type: 'error', message: data.message || 'Invalid or expired promo code.' });
+      }
+    } catch (err) {
+      setNotification({ type: 'error', message: 'Error redeeming promo code.' });
+    } finally {
+      setRedeemingPromo(false);
     }
   };
 
@@ -595,15 +626,14 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
                       <input
                         type="text"
                         readOnly
-                        value={referralInfo?.link || 'https://apinexus.dev/join?ref=...'}
+                        value={referralInfo?.link || `${window.location.origin}?ref=${referralInfo?.code || 'NEXUS-REF'}`}
                         className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-cyan-300 focus:outline-none"
                       />
                       <button
                         onClick={() => {
-                          if (referralInfo?.link) {
-                            navigator.clipboard.writeText(referralInfo.link);
-                            setNotification({ type: 'success', message: '📋 Referral link copied to clipboard!' });
-                          }
+                          const linkToCopy = referralInfo?.link || `${window.location.origin}?ref=${referralInfo?.code || 'NEXUS-REF'}`;
+                          navigator.clipboard.writeText(linkToCopy);
+                          setNotification({ type: 'success', message: '📋 Referral link copied to clipboard!' });
                         }}
                         className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition shrink-0 cursor-pointer"
                       >
@@ -624,45 +654,54 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
                   </div>
                 </div>
 
-                {/* Redeem Friend's Code Box */}
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+                {/* Redeem Codes Section (Referral & Promo Code) */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-6 flex flex-col justify-between">
+                  {/* Redeem Friend's Code Box */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
                       <Sparkles className="w-4 h-4 text-emerald-400" />
-                      <span>Redeem Friend's Referral Code</span>
+                      <span>Redeem Referral Code (+50 Coins)</span>
                     </div>
 
-                    <p className="text-xs text-slate-300">
-                      Have a referral code from a friend or creator? Enter it below to instantly claim your <strong>+50 Bonus Nexus Coins!</strong>
-                    </p>
-
-                    <form onSubmit={handleRedeemReferralCode} className="space-y-3 pt-2">
-                      <div>
-                        <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">
-                          Enter Referral Code:
-                        </label>
-                        <input
-                          type="text"
-                          value={inputRefCode}
-                          onChange={(e) => setInputRefCode(e.target.value)}
-                          placeholder="e.g. NEXUS-KUSH-99"
-                          className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 font-mono focus:border-emerald-500 focus:outline-none"
-                        />
-                      </div>
-
+                    <form onSubmit={handleRedeemReferralCode} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={inputRefCode}
+                        onChange={(e) => setInputRefCode(e.target.value)}
+                        placeholder="e.g. NEXUS-KUSH-99"
+                        className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 font-mono focus:border-emerald-500 focus:outline-none"
+                      />
                       <button
                         type="submit"
                         disabled={redeemingRef || !inputRefCode.trim()}
-                        className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs transition flex items-center gap-1 shrink-0 cursor-pointer font-mono"
                       >
-                        {redeemingRef ? (
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            <Gift className="w-4 h-4" />
-                            Redeem Code (+50 Coins)
-                          </>
-                        )}
+                        {redeemingRef ? 'Redeeming...' : 'Redeem'}
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Redeem Admin Promo Code Box */}
+                  <div className="space-y-3 border-t border-slate-800/80 pt-4">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
+                      <Gift className="w-4 h-4 text-amber-400" />
+                      <span>Redeem Admin Promo Code</span>
+                    </div>
+
+                    <form onSubmit={handleRedeemPromoCode} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={inputPromoCode}
+                        onChange={(e) => setInputPromoCode(e.target.value)}
+                        placeholder="e.g. PROMO-100-XYZ"
+                        className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 font-mono uppercase focus:border-amber-500 focus:outline-none"
+                      />
+                      <button
+                        type="submit"
+                        disabled={redeemingPromo || !inputPromoCode.trim()}
+                        className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition flex items-center gap-1 shrink-0 cursor-pointer font-mono"
+                      >
+                        {redeemingPromo ? 'Claiming...' : 'Claim Promo'}
                       </button>
                     </form>
                   </div>
