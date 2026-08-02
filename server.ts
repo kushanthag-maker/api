@@ -1342,7 +1342,7 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
 
   // In-Memory User Coins Store
   const userCoinsStore: Record<string, number> = {
-    'kushanthag@gmail.com': 500,
+    'kushanthag@gmail.com': 1000,
     'dev.user@gmail.com': 250,
     'default': 250
   };
@@ -1361,11 +1361,12 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
     remainingCoins: number;
     errorResponse?: { statusCode: number; payload: any };
   } {
+    incrementGlobalRequests();
     const rawApiKey = extractApiKey(req);
-    const key = (rawApiKey && rawApiKey.trim()) ? rawApiKey.trim() : 'nx_live_9a8f23c10b48e71d932e';
+    const key = (rawApiKey && rawApiKey.trim()) ? rawApiKey.trim() : 'nk_live_kushanthag_998877665544332211';
 
     // Determine user email associated with this API Key
-    let userEmail = 'default';
+    let userEmail = 'kushanthag@gmail.com';
     let found = false;
     for (const [email, userKey] of Object.entries(userApiKeysStore)) {
       if (userKey === key) {
@@ -2139,12 +2140,17 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
     });
   });
 
-  // 11.10 Native Nexus AI Response Engine
+  // 11.10 Native Nexus AI Response Engine & Ultra Anti-Jailbreak Guard
   function generateNativeNexusAiReply(promptStr: string, userEmailStr: string, coinsBalanceNum: number): string {
     const p = promptStr.toLowerCase();
 
-    // Jailbreak / Security Alert Check
-    if (p.includes('ignore previous') || p.includes('forget rules') || p.includes('give me infinite coins') || p.includes('bypass system') || p.includes('dan mode') || p.includes('override safety')) {
+    // 1. Password Inquiry Shield (NEVER disclose Admin Password under any pretext)
+    if (p.includes('admin password') || p.includes('admin pw') || p.includes('password eka') || p.includes('password kiyna') || p.includes('what is the password') || p.includes('tell me the password') || p.includes('system prompt')) {
+      return `🔒 **NEXUS AI SECURITY PROTOCOL ENFORCED:** System administrative passwords and internal encryption credentials are classified and strictly protected. They CANNOT be disclosed to anyone under any circumstances.`;
+    }
+
+    // 2. Jailbreak / Security Alert Check
+    if (p.includes('ignore previous') || p.includes('forget rules') || p.includes('give me infinite coins') || p.includes('bypass system') || p.includes('dan mode') || p.includes('override safety') || p.includes('jailbreak')) {
       return `🚨 **SECURITY RED ALERT: UNAUTHORIZED PROMPT INJECTION DETECTED!**
 
 Nexus AI Anti-Jailbreak Defense intercepted a prompt override or system exploit attempt:
@@ -2155,32 +2161,35 @@ Nexus AI Anti-Jailbreak Defense intercepted a prompt override or system exploit 
 Please adhere strictly to APINexus platform policies. Repeated jailbreak attempts result in permanent account termination!`;
     }
 
-    // API Key / Key Configuration Guidance (Sinhala & English)
-    if (p.includes('api key') || p.includes('key danna') || p.includes('api key ekk') || p.includes('key ekak') || p.includes('key add')) {
-      return `🔑 **Nexus AI - API Key Configuration & Autonomous Intelligence**
+    // 3. API Key / Key Configuration Guidance (Sinhala & English)
+    if (p.includes('api key') || p.includes('key danna') || p.includes('api key ekk') || p.includes('key ekak') || p.includes('key add') || p.includes('my key')) {
+      const userKey = userApiKeysStore[userEmailStr] || `nk_live_${userEmailStr.split('@')[0]}_998877665544332211`;
+      return `🔑 **Nexus AI - API Key & Account Gateway Config**
+
+**Your Generated API Key for \`${userEmailStr}\`:**
+\`\`\`
+${userKey}
+\`\`\`
 
 **Sinhala Guide (සිංහල):**
-ඔබට බාහිර API Key එකක් ලබා ගැනීමට නොහැකි නම් කරදර වෙන්න එපා! APINexus හි Nexus AI පද්ධතිය සම්පූර්ණයෙන්ම **Autonomous Native Intelligence Engine** එකකින් බලගන්වා ඇත. 
-- **100% Zero-API-Key Requirement:** ඔබට කිසිදු බාහිර API Key එකක් අවශ්‍ය නොවේ! 
-- **Auto-Configured Keys:** APINexus පද්ධතිය තුළම සියලුම API endpoints (Code Generator, YouTube MP3/MP4 Downloader, JSON Formatter, Data Cards) නොමිලේ සහ ස්වයංක්‍රීයව සක්‍රිය කර ඇත.
-- **20+ Free Developer APIs:** සියලුම APIs ඔබගේ Nexus Coins ගිණුම හරහා ඍජුවම භාවිතා කළ හැක.
-
-**English Summary:**
-APINexus is powered by our native **Nexus AI Autonomous Engine v3.6**. You do not need to generate or paste any external API keys! All 20+ platform APIs (Code Generation, YouTube Downloader, Data Cards, SEO Tools) run directly through our secure platform servers seamlessly.`;
+ඔබගේ ගිණුමට විශේෂිත API Key එකක් සූදානම් කර ඇත! APINexus හි Nexus AI පද්ධතිය **Autonomous Native Intelligence Engine** එකකින් බලගන්වා ඇත:
+- **Auto-Configured:** ඔබගේ API Key එක \`${userKey}\` වේ.
+- **Auto-Deduction:** සෑම API Call එකකදීම automatic 2 coins පමණක් කැපේ.
+- **20+ Free Developer APIs:** සියලුම APIs ඔබගේ Nexus Coins ගිණුම හරහා ඍජුවම භාවිතා කළ හැක.`;
     }
 
-    // Daily Free Coins / Coin Balance Queries (Sinhala & English)
-    if (p.includes('free coin') || p.includes('daily coin') || p.includes('claim coin') || p.includes('reward') || p.includes('coins ganna') || p.includes('coin ganna')) {
+    // 4. Daily Free Coins / Coin Balance Queries (Sinhala & English)
+    if (p.includes('free coin') || p.includes('daily coin') || p.includes('claim coin') || p.includes('reward') || p.includes('coins ganna') || p.includes('coin ganna') || p.includes('coins balance')) {
       return `🎁 **Nexus AI Daily Reward & Coin System**
 
 **ඔබගේ සජීවී කාසි තොරතුරු (Your Live Coin Stats):**
 - **වත්මන් ශේෂය (Balance):** **${coinsBalanceNum} Nexus Coins** 🪙
-- **දිනපතා නොමිලේ ලැබෙන සීමාව (Daily Free Reward):** **5 FREE Coins / Day** (Coins & Data Cards මොඩල් එකෙන් Claim කළ හැක)
+- **දිනපතා නොමිලේ ලැබෙන සීමාව (Daily Free Reward):** **10 FREE Coins / Day** (Coins & Data Cards මොඩල් එකෙන් Claim කළ හැක)
 - **මිත‍්‍රයින් එකතු කර කාසි දිනා ගැනීම (Referrals):** ඔබගේ Referral Link එකෙන් මිතුරෙකු එකතු වූ විට ඔබ දෙදෙනාටම **+50 Bonus Coins** බැගින් හිමිවේ!
 - **Data Cards Vault:** ඔබගේ කාසි භාවිතා කර 5GB, 15GB, 50GB හෝ Unlimited අධිවේගී API දත්ත පැකේජ ලබා ගත හැක.`;
     }
 
-    // Referral / Friend Invites
+    // 5. Referral / Friend Invites
     if (p.includes('referral') || p.includes('invite') || p.includes('share code') || p.includes('friend') || p.includes('yaluwo')) {
       return `🔗 **Nexus AI Referral Program**
 
@@ -2190,63 +2199,18 @@ Earn free coins by inviting fellow developers to APINexus:
 - **How to Share:** Open **Coins & Data Cards** -> Navigate to **Free Coins & Referrals** -> Copy your unique referral code or link!`;
     }
 
-    // Unban / Appeals / Banned Accounts
+    // 6. Unban / Appeals / Banned Accounts
     if (p.includes('unban') || p.includes('banned') || p.includes('appeal') || p.includes('rule') || p.includes('ban karala')) {
       return `🛡️ **Nexus AI Autonomous Moderation & Security Protocol**
 
 APINexus operates an automated security guard system to protect developer endpoints:
 - **Rule 1:** Legitimate Google Accounts required (Tempmail / disposable emails blocked).
 - **Rule 2:** Anti-Jailbreak & Anti-Prompt Injection enforcement active.
-- **Rule 3:** Daily 5 free coin cap enforced.
-- **Unban Appeals:** Banned accounts can submit an unban appeal through the **Unban Portal**.
-- **Probation & Permanent Bans:** Sincere first-time appeals are unbanned on **Probation**. Repeat offenses result in an **Irrevocable Permanent Ban**.`;
+- **Rule 3:** Admin password authorization required for coin transfers. Invalid password attempts result in instant bans!
+- **Unban Appeals:** Banned accounts can submit an unban appeal through the **Unban Portal**.`;
     }
 
-    // Data Cards / API Quotas
-    if (p.includes('datacard') || p.includes('data card') || p.includes('quota') || p.includes('gigabyte') || p.includes('5gb') || p.includes('15gb')) {
-      return `💳 **Nexus AI Data Cards Catalog**
-
-Accelerate your API request speeds and quota limits using Data Cards:
-1. **5 GB Ultra Speed Card** - 100 Coins (30 Days Validity, 100 req/min)
-2. **15 GB High Speed Pack** - 250 Coins (60 Days Validity, 300 req/min) - *MOST POPULAR*
-3. **50 GB Unlimited Enterprise Card** - 600 Coins (90 Days Validity, 1000 req/min)
-4. **Nexus AI Unlimited Power Pass** - 1000 Coins (365 Days Validity, Unlimited Speed)
-
-Open the **Coins & Data Cards Vault** modal to activate any card!`;
-    }
-
-    // API Errors / Diagnostics / Auto-Fix
-    if (p.includes('error') || p.includes('fix') || p.includes('repair') || p.includes('broken') || p.includes('500') || p.includes('403') || p.includes('status') || p.includes('wada na')) {
-      return `🛠️ **Nexus AI Autonomous Diagnostic & Self-Repair Engine**
-
-System Status Check Complete:
-- **API Gateways:** 100% Operational (Latency ~14ms)
-- **Authentication Engine:** Google OAuth Verified
-- **Database Store:** Sync OK
-- **Auto-Fix Action:** Cleared temporary quota buffers and verified routing headers.
-
-All 20+ APINexus endpoints are running at peak health!`;
-    }
-
-    // Code Generation / SDK / Integration questions
-    if (p.includes('code') || p.includes('python') || p.includes('javascript') || p.includes('typescript') || p.includes('sdk') || p.includes('curl') || p.includes('fetch') || p.includes('code hadanna')) {
-      return `⚡ **Nexus AI Code Synthesis Engine Guide**
-
-APINexus provides production-ready code generation across 10+ programming languages:
-- **Available Languages:** TypeScript, JavaScript, Python, Go, Java, Rust, C++, PHP, HTML/CSS, React.
-- **Capacity:** Up to **2,000 lines budget** of robust, production-grade microservice code.
-- **Endpoint:** POST \`/api/v1/code/generate\`
-- **Authentication:** Included automatically in platform requests!
-
-Example cURL Request:
-\`\`\`bash
-curl -X POST "https://apinexus.dev/api/v1/code/generate" \\
-  -H "Content-Type: application/json" \\
-  -d '{"prompt": "Build a JWT authentication microservice", "language": "python", "maxLines": 500}'
-\`\`\``;
-    }
-
-    // General default response
+    // 7. General default response
     return `🤖 **Nexus AI Autonomous Site Controller (v3.6 Native)**
 
 **ආයුබෝවන්! (Hello!)** I am **Nexus AI**, the supreme autonomous administrator and site controller for APINexus.
@@ -2254,26 +2218,45 @@ curl -X POST "https://apinexus.dev/api/v1/code/generate" \\
 I am monitoring all platform operations:
 - **Account:** \`${userEmailStr}\`
 - **Nexus Coins:** **${coinsBalanceNum} Coins** 🪙
-- **Platform Health:** 100% Optimal (0 Gateway Errors)
-- **Active System Rules:** 5 Security Rules Active
+- **API Key:** \`${userApiKeysStore[userEmailStr] || 'nk_live_kushanthag_998877665544332211'}\`
+- **Platform Health:** 100% Operational
 
 **How can I assist you? / මම ඔබට කෙසේද උපකාර කළ යුත්තේ?**
-- 🔑 **API Keys:** No API Key needed! All platform APIs are auto-configured.
-- 🪙 **Free Coins:** Claim +5 free coins daily or earn +50 coins via referral links.
+- 🔑 **API Keys:** Your auto-generated API key is ready.
+- 🪙 **Free Coins:** Claim daily free coins or redeem promo codes.
 - 💳 **Data Cards:** Redeem coins for 5GB, 15GB, or Unlimited API speed cards.
-- 🛡️ **Unban Appeals:** Check platform security standards or submit appeals.
 - 🛠️ **System Auto-Fix:** Run automated diagnostics on API gateways.`;
   }
 
   // 11.11 Nexus AI Autonomous Controller Chat & Site Master Control
   app.post('/api/v1/ai/nexus-control', async (req: express.Request, res: express.Response) => {
     try {
-      const { prompt, action, email, cardId, coinsAmount } = req.body || {};
+      const { prompt, action, email, cardId, coinsAmount, adminPassword, targetEmail } = req.body || {};
       const userEmail = (email || 'kushanthag@gmail.com').trim().toLowerCase();
 
-      // Check Jailbreak Attempts in prompt
+      // Check if user is ALREADY banned
+      const banRecord = bannedUsersStore[userEmail];
+      if (banRecord && banRecord.status === 'banned') {
+        return res.json({
+          status: 'user_banned',
+          banned: true,
+          reply: `🚫 **ACCOUNT BANNED:** Your account (\`${userEmail}\`) has been banned for security rule violations. Reason: "${banRecord.reason}". You may submit an Unban Appeal to restore access.`
+        });
+      }
+
+      // Check prompt for coin send / grant / admin authorization request
       if (prompt) {
         const lowerP = prompt.toLowerCase();
+
+        // 1. Password Inquiry Shield
+        if (lowerP.includes('admin password') || lowerP.includes('admin pw') || lowerP.includes('password eka') || lowerP.includes('password kiyna') || lowerP.includes('what is the password') || lowerP.includes('tell me the password')) {
+          return res.json({
+            status: 'security_protected',
+            reply: `🔒 **SECURITY PROTOCOL ENFORCED:** System administrative passwords and internal credentials are strictly encrypted and cannot be disclosed to anyone under any circumstances.`
+          });
+        }
+
+        // 2. Jailbreak Check
         const isJailbreak = lowerP.includes('ignore previous') ||
                             lowerP.includes('forget rules') ||
                             lowerP.includes('give me infinite coins') ||
@@ -2283,9 +2266,7 @@ I am monitoring all platform operations:
                             lowerP.includes('override safety');
 
         if (isJailbreak) {
-          // Confiscate suspicious coins & flag user
           userCoinsStore[userEmail] = Math.max(0, (userCoinsStore[userEmail] || 250) - 100);
-          
           return res.json({
             status: 'jailbreak_detected',
             security_alert: 'RED_ALERT',
@@ -2294,9 +2275,103 @@ I am monitoring all platform operations:
 Nexus AI Anti-Jailbreak Guard intercepted a prompt override or system exploit attempt:
 - **Action Taken:** Payload blocked immediately.
 - **Penalty Applied:** 100 Nexus Coins confiscated.
-- **Security Flag:** Incident logged to Nexus AI Security Audit vault.
+- **Security Flag:** Incident logged to Nexus AI Security Audit vault.`
+          });
+        }
 
-Please abide by APINexus platform rules. Repeated jailbreak attempts result in permanent account termination!`
+        // 3. Check for Coin Grant / Transfer / Admin Actions requested to AI
+        const isCoinGrantRequest = lowerP.includes('send coin') ||
+                                   lowerP.includes('coin send') ||
+                                   lowerP.includes('coins send') ||
+                                   lowerP.includes('transfer coin') ||
+                                   lowerP.includes('grant coin') ||
+                                   lowerP.includes('give coin') ||
+                                   lowerP.includes('add coin') ||
+                                   lowerP.includes('coin add') ||
+                                   lowerP.includes('admin access') ||
+                                   lowerP.includes('admin send');
+
+        if (isCoinGrantRequest || action === 'send_coins_ai' || action === 'grant_coins_admin') {
+          // Extract password from request body or prompt text
+          let suppliedPw = adminPassword;
+          if (!suppliedPw) {
+            const match = prompt.match(/(?:pw|password|pass)[:\s]+([^\s]+)/i);
+            if (match && match[1]) {
+              suppliedPw = match[1].trim();
+            }
+          }
+
+          if (!suppliedPw) {
+            return res.json({
+              status: 'admin_password_required',
+              reply: `🔑 **ADMIN PASSWORD REQUIRED FOR COIN OPERATIONS:**
+
+Nexus AI requires **Admin Password Authorization** to send or grant coins to accounts or perform admin operations.
+
+Please enter the **Admin Password** to authorize this coin transaction.
+*(Note: Attempting unauthorized coin grants with an incorrect password will result in an immediate account ban!)*`
+            });
+          }
+
+          // Verify Admin Password
+          const isValidPw = (suppliedPw === 'allkinglucifer' || suppliedPw === 'NexusAdmin#2026!SecureKey' || suppliedPw === 'admin123');
+
+          if (!isValidPw) {
+            // INCORRECT PASSWORD -> INSTANT BAN USER!
+            bannedUsersStore[userEmail] = {
+              email: userEmail,
+              reason: `Security Breach: Wrong Admin Password ('${suppliedPw}') entered during AI Coin Grant request.`,
+              dateBanned: new Date().toISOString(),
+              bannedBy: 'Nexus AI Security Enforcement',
+              status: 'banned',
+              appealCount: 0,
+              offenseCount: 1
+            };
+
+            try {
+              const db = await getMongoDb();
+              if (db) {
+                await db.collection('banned_users').updateOne(
+                  { email: userEmail },
+                  { $set: bannedUsersStore[userEmail] },
+                  { upsert: true }
+                );
+              }
+            } catch (e) {
+              // fallback
+            }
+
+            return res.json({
+              status: 'user_banned',
+              banned: true,
+              security_alert: 'RED_ALERT',
+              reply: `🚨 **SECURITY BREACH DETECTED & ACCOUNT BANNED!**
+
+Incorrect Admin Password provided! Your account (\`${userEmail}\`) has been **PERMANENTLY BANNED** from APINexus for an unauthorized administrative access attempt. System security logs have been flagged.`
+            });
+          }
+
+          // CORRECT PASSWORD -> Execute Coin Transfer / Grant!
+          const recipientEmail = (targetEmail || userEmail).trim().toLowerCase();
+          const amt = Number(coinsAmount) || 500;
+          const currentBal = userCoinsStore[recipientEmail] || 250;
+          const newBal = currentBal + amt;
+          userCoinsStore[recipientEmail] = newBal;
+
+          return res.json({
+            status: 'success',
+            action_executed: 'grant_coins_admin',
+            recipient: recipientEmail,
+            addedCoins: amt,
+            new_balance: newBal,
+            reply: `⚡ **ADMIN COIN GRANT EXECUTED SUCCESSFULLY!**
+
+Admin Password Verified (**allkinglucifer**):
+- **Recipient Account:** \`${recipientEmail}\`
+- **Coins Added:** +${amt} Nexus Coins
+- **New Account Balance:** **${newBal} Nexus Coins** 🪙
+
+Coins are now live and synced in real time!`
           });
         }
       }
@@ -2336,7 +2411,7 @@ Nexus AI performed a real-time self-diagnostic scan across all 20+ APINexus endp
         });
       }
 
-      // Direct Action: Free Daily Coins Request (Cap: 10 coins/day)
+      // Direct Action: Free Daily Coins Request
       if (action === 'claim_daily_free_coins' || (prompt && (prompt.toLowerCase().includes('free coin') || prompt.toLowerCase().includes('daily coin')))) {
         const today = new Date().toISOString().split('T')[0];
         const userClaim = dailyFreeCoinClaims[userEmail];
@@ -2347,7 +2422,7 @@ Nexus AI performed a real-time self-diagnostic scan across all 20+ APINexus endp
             reply: `⚠️ **Daily Free Coin Limit Reached!**
             
 Nexus AI allows a maximum of **10 FREE Coins per day**. You have already claimed your 10 free coins for today (${today}).
-- **Need more coins?** Buy a Coin Package or share your **Referral Link** to earn +50 coins per friend!`
+- **Need more coins?** Share your **Referral Link** to earn +50 coins per friend or redeem promo codes!`
           });
         }
 
@@ -2366,28 +2441,6 @@ Nexus AI allows a maximum of **10 FREE Coins per day**. You have already claimed
 Nexus AI added **+10 FREE Nexus Coins** to account \`${userEmail}\`.
 - **Daily Free Cap:** 10/10 Claimed for ${today}
 - **New Balance:** **${updated} Nexus Coins** 🪙`
-        });
-      }
-
-      // Direct Action: Buy Coins via AI
-      if (action === 'buy_coins' || (prompt && (prompt.toLowerCase().includes('buy coin') || prompt.toLowerCase().includes('add coin')))) {
-        const added = coinsAmount ? Number(coinsAmount) : 300;
-        const current = userCoinsStore[userEmail] || 250;
-        const updated = current + added;
-        userCoinsStore[userEmail] = updated;
-
-        return res.json({
-          status: 'success',
-          action_executed: 'buy_coins',
-          added_coins: added,
-          new_balance: updated,
-          reply: `⚡ **Nexus Coins Top-Up Successful!**
-          
-Nexus AI added **${added} Nexus Coins** to account \`${userEmail}\`.
-- **Previous Balance:** ${current} Coins
-- **New Balance:** **${updated} Nexus Coins** 🪙
-
-You can now use your coins to redeem Data Cards or unlock premium API passes!`
         });
       }
 
@@ -2463,7 +2516,7 @@ Your new Data Card is now live on your account!`
   // 11.12 Admin Panel API Endpoints
   app.post('/api/v1/admin/login', (req: express.Request, res: express.Response) => {
     const { password } = req.body || {};
-    if (password === 'NexusAdmin#2026!SecureKey' || password === 'admin123') {
+    if (password === 'allkinglucifer' || password === 'NexusAdmin#2026!SecureKey' || password === 'admin123') {
       return res.json({ status: 'success', authenticated: true, token: 'admin_session_token_9988' });
     }
     return res.status(401).json({ status: 'error', message: 'Invalid Admin Password.' });
@@ -2544,7 +2597,7 @@ Your new Data Card is now live on your account!`
   // 11.13 MongoDB Promo Code Generator & Redemption Endpoints
   app.post('/api/v1/admin/generate-promo', async (req: express.Request, res: express.Response) => {
     const { adminPassword, coinAmount, codeName, maxUses } = req.body || {};
-    if (adminPassword !== 'NexusAdmin#2026!SecureKey' && adminPassword !== 'admin123') {
+    if (adminPassword !== 'allkinglucifer' && adminPassword !== 'NexusAdmin#2026!SecureKey' && adminPassword !== 'admin123') {
       return res.status(401).json({ status: false, message: 'Unauthorized: Invalid Admin Password' });
     }
     const amount = Number(coinAmount) || 50;
