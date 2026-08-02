@@ -2,6 +2,8 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 export type ApiCategory = 'ai' | 'auth' | 'data' | 'utility' | 'news';
 
+export type ApiStatus = 'online' | 'offline' | 'degraded';
+
 export interface ApiParam {
   name: string;
   type: string;
@@ -21,6 +23,7 @@ export interface ApiEndpoint {
   description: string;
   rateLimit: string;
   isExperimental?: boolean;
+  status?: ApiStatus;
   params: ApiParam[];
   sampleRequestBody?: Record<string, any>;
   sampleResponseBody: Record<string, any>;

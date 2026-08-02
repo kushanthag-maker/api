@@ -30,7 +30,12 @@ import {
   Download,
   Film,
   ExternalLink,
-  Music
+  Music,
+  Newspaper,
+  Activity,
+  Signal,
+  AlertTriangle,
+  Globe
 } from 'lucide-react';
 
 interface ApiExplorerProps {

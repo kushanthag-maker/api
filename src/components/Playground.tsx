@@ -314,7 +314,7 @@ export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
                 onClick={() => {
                   setMethod('POST');
                   setUrl(`${hostBase}/api/v1/ai/generate`);
-                  setRequestBody(JSON.stringify({ prompt: 'Explain quantum computing in 2 sentences', model: 'gemini-2.5-flash' }, null, 2));
+                  setRequestBody(JSON.stringify({ prompt: 'Explain quantum computing in 2 sentences', model: 'nexus-ai-flash' }, null, 2));
                 }}
                 className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shrink-0 cursor-pointer"
               >

@@ -92,7 +92,7 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
       status: 'success',
       authenticated: true,
       api_key: 'nx_live_9a8f23c10b48e71d932e',
-      engine: 'Nexus Powerful Code Synthesis Engine v3.2 (Gemini Powered)',
+      engine: 'Nexus Powerful Code Synthesis Engine v3.2 (Nexus AI Powered)',
       prompt: 'Create a full-stack REST API server with TypeScript, Express, and JWT Auth',
       language: 'typescript',
       framework: 'Express',

@@ -139,7 +139,7 @@ vercel --prod`;
                 <span>Set Environment Vars</span>
               </div>
               <p className="text-slate-400 leading-relaxed text-[11px]">
-                Add optional secrets like <code className="text-cyan-300">GEMINI_API_KEY</code> in Vercel Project Settings → Environment Variables.
+                Add optional secrets like <code className="text-cyan-300">NEXUS_API_KEY</code> in Vercel Project Settings → Environment Variables.
               </p>
             </div>
           </div>
