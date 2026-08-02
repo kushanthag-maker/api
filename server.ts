@@ -1963,7 +1963,7 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
     }
   });
 
-  // 11.7 Daily Free Coins Claim Endpoint (Max 5 coins per day)
+  // 11.7 Daily Free Coins Claim Endpoint (Max 10 coins per day)
   app.post('/api/v1/coins/daily-claim', (req: express.Request, res: express.Response) => {
     const { email } = req.body || {};
     const cleanEmail = (email || 'default').trim().toLowerCase();
@@ -1971,17 +1971,17 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
 
     const userClaim = dailyFreeCoinClaims[cleanEmail];
 
-    if (userClaim && userClaim.date === today && userClaim.coinsClaimed >= 5) {
+    if (userClaim && userClaim.date === today && userClaim.coinsClaimed >= 10) {
       return res.status(400).json({
         status: 'limit_reached',
         claimed_today: userClaim.coinsClaimed,
-        max_daily_free: 5,
-        message: '⚠️ You have already claimed your maximum free limit of 5 Nexus Coins for today! To get more coins, please purchase a coin pack or use your Referral Link.'
+        max_daily_free: 10,
+        message: '⚠️ You have already claimed your maximum free limit of 10 Nexus Coins for today! To get more coins, please purchase a coin pack or use your Referral Link.'
       });
     }
 
     const currentlyClaimed = (userClaim && userClaim.date === today) ? userClaim.coinsClaimed : 0;
-    const canClaim = 5 - currentlyClaimed;
+    const canClaim = 10 - currentlyClaimed;
 
     const currentBalance = userCoinsStore[cleanEmail] || 250;
     const newBalance = currentBalance + canClaim;
@@ -1989,14 +1989,14 @@ Do NOT wrap the response in markdown backticks if possible, or provide raw text 
 
     dailyFreeCoinClaims[cleanEmail] = {
       date: today,
-      coinsClaimed: 5
+      coinsClaimed: 10
     };
 
     return res.json({
       status: 'success',
       claimed: canClaim,
-      claimed_today: 5,
-      max_daily_free: 5,
+      claimed_today: 10,
+      max_daily_free: 10,
       newCoinsBalance: newBalance,
       message: `🎉 Success! Nexus AI granted you +${canClaim} FREE daily coins for today (${today}). New Balance: ${newBalance} Coins.`
     });
@@ -2295,35 +2295,35 @@ Nexus AI performed a real-time self-diagnostic scan across all 20+ APINexus endp
         });
       }
 
-      // Direct Action: Free Daily Coins Request (Cap: 5 coins/day)
+      // Direct Action: Free Daily Coins Request (Cap: 10 coins/day)
       if (action === 'claim_daily_free_coins' || (prompt && (prompt.toLowerCase().includes('free coin') || prompt.toLowerCase().includes('daily coin')))) {
         const today = new Date().toISOString().split('T')[0];
         const userClaim = dailyFreeCoinClaims[userEmail];
 
-        if (userClaim && userClaim.date === today && userClaim.coinsClaimed >= 5) {
+        if (userClaim && userClaim.date === today && userClaim.coinsClaimed >= 10) {
           return res.json({
             status: 'limit_reached',
             reply: `⚠️ **Daily Free Coin Limit Reached!**
             
-Nexus AI allows a maximum of **5 FREE Coins per day**. You have already claimed your 5 free coins for today (${today}).
+Nexus AI allows a maximum of **10 FREE Coins per day**. You have already claimed your 10 free coins for today (${today}).
 - **Need more coins?** Buy a Coin Package or share your **Referral Link** to earn +50 coins per friend!`
           });
         }
 
         const current = userCoinsStore[userEmail] || 250;
-        const updated = current + 5;
+        const updated = current + 10;
         userCoinsStore[userEmail] = updated;
-        dailyFreeCoinClaims[userEmail] = { date: today, coinsClaimed: 5 };
+        dailyFreeCoinClaims[userEmail] = { date: today, coinsClaimed: 10 };
 
         return res.json({
           status: 'success',
           action_executed: 'claim_daily_free_coins',
-          added_coins: 5,
+          added_coins: 10,
           new_balance: updated,
           reply: `🎁 **Nexus AI Daily Reward Granted!**
           
-Nexus AI added **+5 FREE Nexus Coins** to account \`${userEmail}\`.
-- **Daily Free Cap:** 5/5 Claimed for ${today}
+Nexus AI added **+10 FREE Nexus Coins** to account \`${userEmail}\`.
+- **Daily Free Cap:** 10/10 Claimed for ${today}
 - **New Balance:** **${updated} Nexus Coins** 🪙`
         });
       }
@@ -2449,12 +2449,13 @@ Your new Data Card is now live on your account!`
   });
 
   app.post('/api/v1/admin/send-coins', (req: express.Request, res: express.Response) => {
-    const { targetEmail, coins } = req.body || {};
-    if (!targetEmail || coins === undefined || isNaN(Number(coins))) {
+    const { targetEmail, coins, amount } = req.body || {};
+    const coinAmt = coins !== undefined ? coins : amount;
+    if (!targetEmail || coinAmt === undefined || isNaN(Number(coinAmt))) {
       return res.status(400).json({ status: 'error', message: 'Target email and coin amount are required.' });
     }
     const cleanEmail = targetEmail.trim().toLowerCase();
-    const numCoins = Number(coins);
+    const numCoins = Number(coinAmt);
     const current = userCoinsStore[cleanEmail] || 250;
     const newBal = current + numCoins;
     userCoinsStore[cleanEmail] = newBal;
@@ -2500,7 +2501,7 @@ Your new Data Card is now live on your account!`
   });
 
   // 404 Fallback Handler for Unmatched API Endpoints
-  app.use((req: express.Request, res: express.Response) => {
+  app.use('/api/*', (req: express.Request, res: express.Response) => {
     res.status(404).json({
       status: false,
       message: `API Endpoint not found: ${req.method} ${req.originalUrl || req.url}`,

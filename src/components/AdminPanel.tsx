@@ -113,6 +113,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
         body: JSON.stringify({
           adminPassword: 'NexusAdmin#2026!SecureKey',
           targetEmail,
+          coins: amount,
           amount
         })
       });
@@ -204,7 +205,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
         </form>
 
         <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-500">
-          Default Master Key: <code className="text-cyan-400 font-mono font-bold">NexusAdmin#2026!SecureKey</code>
+          Nexus AI Protected Administrative Portal
         </div>
       </div>
     );

@@ -546,11 +546,11 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-extrabold text-white">Nexus AI Daily Free Reward</h3>
                       <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30 uppercase">
-                        Max 5 Coins / Day
+                        Max 10 Coins / Day
                       </span>
                     </div>
                     <p className="text-xs text-slate-300 mt-1 max-w-lg">
-                      Claim your free daily allocation of <strong>5 Nexus Coins</strong> every 24 hours. (To prevent abuse, daily free coins are strictly capped at 5 coins per day).
+                      Claim your free daily allocation of <strong>10 Nexus Coins</strong> every 24 hours. (To prevent abuse, daily free coins are strictly capped at 10 coins per day).
                     </p>
                   </div>
                 </div>
@@ -565,7 +565,7 @@ export const CoinsAndDataCardsModal: React.FC<CoinsAndDataCardsModalProps> = ({
                   ) : (
                     <>
                       <Gift className="w-4 h-4" />
-                      Claim +5 Free Coins Today
+                      Claim +10 Free Coins Today
                     </>
                   )}
                 </button>
