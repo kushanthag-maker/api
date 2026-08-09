@@ -28,8 +28,9 @@ async function getMongoDb(): Promise<Db | null> {
   }
 }
 
-// Global Total Requests Counter
+// Global Total Requests Counter & User Keys Map
 let globalApiRequestsCounter = 12480;
+const userApiKeysStore: Record<string, string> = {};
 async function incrementGlobalRequests() {
   globalApiRequestsCounter++;
   try {
@@ -77,10 +78,64 @@ function extractApiKey(req: express.Request): string | null {
   return null;
 }
 
-// In-Memory API Keys Store (Populated via Admin panel or Key Manager with Admin authorization)
-const userApiKeysStore: Record<string, string> = {};
+// Structured In-Memory API Keys Store
+export interface ServerApiKey {
+  id: string;
+  key: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  status: 'active' | 'revoked';
+  environment: 'production' | 'development';
+  usageLimit: number;
+  usageToday: number;
+}
 
-// Strict API Key Verification Helper (No demo keys allowed, only Admin-registered keys)
+const serverKeysStore = new Map<string, ServerApiKey>();
+
+// Populate initial default keys
+const defaultDemoKey: ServerApiKey = {
+  id: 'key_default_1',
+  key: 'nx_live_default_admin_key_2026',
+  name: 'Default Admin Key',
+  email: 'admin@nexus.api',
+  createdAt: new Date().toISOString().split('T')[0],
+  status: 'active',
+  environment: 'production',
+  usageLimit: 50000,
+  usageToday: 0
+};
+serverKeysStore.set(defaultDemoKey.key, defaultDemoKey);
+
+// Helper to find or auto-register keys
+function lookupOrRegisterKey(rawKey: string): ServerApiKey | null {
+  const cleanKey = rawKey.trim();
+  if (serverKeysStore.has(cleanKey)) {
+    return serverKeysStore.get(cleanKey)!;
+  }
+
+  // Allow dynamically created valid format keys
+  if ((cleanKey.startsWith('nx_live_') || cleanKey.startsWith('nx_test_') || cleanKey.startsWith('nx_free_')) && cleanKey.length >= 12) {
+    const isFree = cleanKey.startsWith('nx_free_');
+    const newRecord: ServerApiKey = {
+      id: `key_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      key: cleanKey,
+      name: isFree ? 'Free User Key (10 Reqs)' : 'Standard Nexus Key',
+      email: 'user@nexus.api',
+      createdAt: new Date().toISOString().split('T')[0],
+      status: 'active',
+      environment: cleanKey.startsWith('nx_test_') ? 'development' : 'production',
+      usageLimit: isFree ? 10 : 10000,
+      usageToday: 0
+    };
+    serverKeysStore.set(cleanKey, newRecord);
+    return newRecord;
+  }
+
+  return null;
+}
+
+// Strict API Key Verification Helper with Quota Enforcement
 function verifyApiKey(req: express.Request): {
   allowed: boolean;
   userEmail: string;
@@ -106,38 +161,63 @@ function verifyApiKey(req: express.Request): {
     };
   }
 
-  const key = rawApiKey.trim();
-  let userEmail = 'admin@nexus.api';
-  let found = false;
+  const keyRecord = lookupOrRegisterKey(rawApiKey);
 
-  for (const [email, userKey] of Object.entries(userApiKeysStore)) {
-    if (userKey === key) {
-      userEmail = email;
-      found = true;
-      break;
-    }
-  }
-
-  if (!found) {
+  if (!keyRecord) {
     return {
       allowed: false,
       userEmail: 'anonymous',
-      apiKey: key,
+      apiKey: rawApiKey,
       errorResponse: {
         statusCode: 401,
         payload: {
           status: false,
           error: 'INVALID_API_KEY',
-          message: 'The provided Nexus API Key is invalid or has not been issued by Admin. Please generate a valid API Key from the Admin Panel or Key Manager.'
+          message: 'The provided Nexus API Key is invalid or has not been registered on the server. Please generate a Free API Key (10 requests) or request one from Admin.'
         }
       }
     };
   }
 
+  if (keyRecord.status === 'revoked') {
+    return {
+      allowed: false,
+      userEmail: keyRecord.email,
+      apiKey: keyRecord.key,
+      errorResponse: {
+        statusCode: 403,
+        payload: {
+          status: false,
+          error: 'REVOKED_API_KEY',
+          message: 'This API Key has been revoked by System Admin. Please generate a new key.'
+        }
+      }
+    };
+  }
+
+  if (keyRecord.usageToday >= keyRecord.usageLimit) {
+    return {
+      allowed: false,
+      userEmail: keyRecord.email,
+      apiKey: keyRecord.key,
+      errorResponse: {
+        statusCode: 429,
+        payload: {
+          status: false,
+          error: 'QUOTA_EXCEEDED',
+          message: `API Key request limit reached (${keyRecord.usageLimit} max requests). Free keys have a 10 request limit. Please contact Admin or generate a new key.`
+        }
+      }
+    };
+  }
+
+  // Increment usage count for valid request
+  keyRecord.usageToday += 1;
+
   return {
     allowed: true,
-    userEmail,
-    apiKey: key
+    userEmail: keyRecord.email,
+    apiKey: keyRecord.key
   };
 }
 
@@ -194,14 +274,26 @@ export function buildApp(): express.Application {
         const cleanPath = req.path;
         telemetryData.endpointHits[cleanPath] = (telemetryData.endpointHits[cleanPath] || 0) + 1;
 
+        // Sanitize URL path so secret keys in query params are NEVER stored or exposed in request logs
+        const rawUrl = req.originalUrl || req.path;
+        const sanitizedUrl = rawUrl.replace(/([?&])(apiKey|key|api_key|token|password|secret)=([^&]*)/gi, '$1$2=••••••••');
+
         const rawApiKey = (req.query.apiKey || req.query.key || req.headers['x-api-key'] || req.body?.apiKey) as string | undefined;
-        const maskedKey = rawApiKey ? `${rawApiKey.substring(0, 7)}...${rawApiKey.slice(-4)}` : 'None';
+        let maskedKey = 'Anonymous';
+        if (rawApiKey && typeof rawApiKey === 'string') {
+          const cleanK = rawApiKey.trim();
+          if (cleanK.length > 10) {
+            maskedKey = `${cleanK.substring(0, 7)}••••${cleanK.slice(-3)}`;
+          } else {
+            maskedKey = '••••••••';
+          }
+        }
 
         const logItem: RequestLogItem = {
           id: `req_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
           timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
           method: req.method,
-          path: req.originalUrl || req.path,
+          path: sanitizedUrl,
           statusCode: res.statusCode,
           latencyMs: latency,
           apiKey: maskedKey
@@ -474,6 +566,135 @@ export function buildApp(): express.Application {
     }
   });
 
+  // Generate Free API Key Endpoint (Public - 10 Requests Limit)
+  app.post('/api/v1/keys/generate-free', (req: express.Request, res: express.Response) => {
+    const { name, email } = req.body || {};
+    const cleanEmail = (email || 'user@nexus.api').trim().toLowerCase();
+    const cleanName = (name || 'Free User Project').trim();
+
+    const randomHash = crypto.randomBytes(8).toString('hex');
+    const freeKeyString = `nx_free_${randomHash}`;
+
+    const freeKeyRecord: ServerApiKey = {
+      id: `key_free_${Date.now()}`,
+      key: freeKeyString,
+      name: cleanName,
+      email: cleanEmail,
+      createdAt: new Date().toISOString().split('T')[0],
+      status: 'active',
+      environment: 'production',
+      usageLimit: 10,
+      usageToday: 0
+    };
+
+    serverKeysStore.set(freeKeyString, freeKeyRecord);
+
+    return res.json({
+      status: true,
+      apiKey: freeKeyRecord,
+      message: '🎁 Free API Key generated successfully! (Limit: 10 requests)'
+    });
+  });
+
+  // Query User API Keys (Public - strict exact Email or Key lookup to prevent key leaks)
+  app.get('/api/v1/keys/user-keys', (req: express.Request, res: express.Response) => {
+    const queryEmail = ((req.query.email || req.query.query || '') as string).trim().toLowerCase();
+
+    if (!queryEmail || queryEmail.length < 3) {
+      return res.json({ status: true, keys: [], message: 'Please provide exact email address to lookup keys.' });
+    }
+
+    const allKeys = Array.from(serverKeysStore.values());
+
+    // Strict exact email or exact key match
+    const matchedKeys = allKeys.filter(k => 
+      k.email.toLowerCase() === queryEmail || 
+      k.key.toLowerCase() === queryEmail
+    );
+
+    return res.json({
+      status: true,
+      keys: matchedKeys
+    });
+  });
+
+  // Sync / Register Key Endpoint (Public)
+  app.post('/api/v1/keys/sync', (req: express.Request, res: express.Response) => {
+    const { key, name, email, usageLimit, environment } = req.body || {};
+    if (!key || typeof key !== 'string' || key.trim().length < 8) {
+      return res.status(400).json({ status: false, message: 'Invalid API Key string.' });
+    }
+
+    const cleanKey = key.trim();
+    if (serverKeysStore.has(cleanKey)) {
+      const existing = serverKeysStore.get(cleanKey)!;
+      return res.json({ status: true, apiKey: existing, message: 'Key already registered.' });
+    }
+
+    const newRecord: ServerApiKey = {
+      id: `key_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      key: cleanKey,
+      name: name || 'Registered Key',
+      email: email || 'user@nexus.api',
+      createdAt: new Date().toISOString().split('T')[0],
+      status: 'active',
+      environment: environment === 'development' ? 'development' : 'production',
+      usageLimit: typeof usageLimit === 'number' ? usageLimit : 10000,
+      usageToday: 0
+    };
+
+    serverKeysStore.set(cleanKey, newRecord);
+    return res.json({ status: true, apiKey: newRecord, message: 'Key synced to server.' });
+  });
+
+  // Admin List All API Keys Endpoint
+  app.get('/api/v1/admin/keys', (req: express.Request, res: express.Response) => {
+    const authHeader = req.headers['x-admin-password'] || req.query.password;
+    if (authHeader !== 'allkinglucifer') {
+      return res.status(401).json({ status: false, message: 'Invalid Admin Password.' });
+    }
+    const keysList = Array.from(serverKeysStore.values());
+    return res.json({ status: true, keys: keysList });
+  });
+
+  // Admin Update Key Limit Endpoint
+  app.post('/api/v1/admin/update-key-limit', (req: express.Request, res: express.Response) => {
+    const { password, key, newLimit } = req.body || {};
+    if (password !== 'allkinglucifer') {
+      return res.status(401).json({ status: false, message: 'Invalid Admin Password.' });
+    }
+    if (!key || !serverKeysStore.has(key)) {
+      return res.status(404).json({ status: false, message: 'API Key not found on server.' });
+    }
+
+    const record = serverKeysStore.get(key)!;
+    record.usageLimit = Math.max(1, parseInt(newLimit, 10) || 10000);
+    return res.json({
+      status: true,
+      apiKey: record,
+      message: `Updated limit for key '${key}' to ${record.usageLimit} requests!`
+    });
+  });
+
+  // Admin Revoke / Activate Key Endpoint
+  app.post('/api/v1/admin/revoke-key', (req: express.Request, res: express.Response) => {
+    const { password, key, action } = req.body || {};
+    if (password !== 'allkinglucifer') {
+      return res.status(401).json({ status: false, message: 'Invalid Admin Password.' });
+    }
+    if (!key || !serverKeysStore.has(key)) {
+      return res.status(404).json({ status: false, message: 'API Key not found on server.' });
+    }
+
+    const record = serverKeysStore.get(key)!;
+    record.status = action === 'revoke' ? 'revoked' : 'active';
+    return res.json({
+      status: true,
+      apiKey: record,
+      message: `API Key '${key}' status updated to ${record.status.toUpperCase()}!`
+    });
+  });
+
   // Admin Panel API Endpoints
   app.post('/api/v1/admin/login', (req: express.Request, res: express.Response) => {
     const { password } = req.body || {};
@@ -483,14 +704,18 @@ export function buildApp(): express.Application {
     return res.status(401).json({ status: 'error', message: 'Invalid Admin Password.' });
   });
 
-  app.get('/api/v1/admin/users', (_req: express.Request, res: express.Response) => {
-    const allEmails = Object.keys(userApiKeysStore).filter(e => e !== 'default');
-
-    const usersList = allEmails.map(email => ({
-      email,
-      name: email.split('@')[0],
-      apiKey: userApiKeysStore[email] || `nx_live_${email.split('@')[0]}_9988`,
-      status: 'active'
+  app.get('/api/v1/admin/users', (req: express.Request, res: express.Response) => {
+    const authHeader = req.headers['x-admin-password'] || req.query.password;
+    if (authHeader !== 'allkinglucifer') {
+      return res.status(401).json({ status: false, message: 'Invalid Admin Password.' });
+    }
+    const allKeys = Array.from(serverKeysStore.values());
+    const usersList = allKeys.map(k => ({
+      email: k.email,
+      name: k.name,
+      apiKey: k.key,
+      status: k.status === 'revoked' ? 'banned' : 'active',
+      createdAt: k.createdAt
     }));
 
     return res.json({ status: 'success', users: usersList });
@@ -498,7 +723,7 @@ export function buildApp(): express.Application {
 
   // Admin Create API Key Endpoint
   app.post('/api/v1/admin/create-key', (req: express.Request, res: express.Response) => {
-    const { password, email, environment, name } = req.body || {};
+    const { password, email, environment, name, usageLimit } = req.body || {};
     if (password !== 'allkinglucifer') {
       return res.status(401).json({ status: false, message: 'Invalid Admin Password.' });
     }
@@ -508,11 +733,24 @@ export function buildApp(): express.Application {
     const randomHash = crypto.randomBytes(10).toString('hex');
     const newApiKey = `${prefix}${randomHash}`;
 
-    userApiKeysStore[cleanEmail] = newApiKey;
+    const newRecord: ServerApiKey = {
+      id: `key_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      key: newApiKey,
+      name: name || `${cleanEmail.split('@')[0]} Key`,
+      email: cleanEmail,
+      createdAt: new Date().toISOString().split('T')[0],
+      status: 'active',
+      environment: environment === 'development' ? 'development' : 'production',
+      usageLimit: typeof usageLimit === 'number' ? usageLimit : 10000,
+      usageToday: 0
+    };
+
+    serverKeysStore.set(newApiKey, newRecord);
 
     return res.json({
       status: true,
       apiKey: newApiKey,
+      keyObject: newRecord,
       userEmail: cleanEmail,
       name: name || cleanEmail.split('@')[0],
       message: `✅ Official API Key generated successfully for ${cleanEmail}!`

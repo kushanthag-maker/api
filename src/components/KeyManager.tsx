@@ -14,7 +14,11 @@ import {
   EyeOff,
   Clock,
   Zap,
-  Sparkles
+  Sparkles,
+  Gift,
+  Search,
+  RefreshCw,
+  CheckCircle2
 } from 'lucide-react';
 
 interface KeyManagerProps {
@@ -36,11 +40,24 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [visibleKeyId, setVisibleKeyId] = useState<string | null>(null);
 
-  // Form State
+  // Free Key State
+  const [freeKeyName, setFreeKeyName] = useState('My Free Project');
+  const [freeKeyEmail, setFreeKeyEmail] = useState('');
+  const [freeKeyLoading, setFreeKeyLoading] = useState(false);
+  const [freeKeySuccessMsg, setFreeKeySuccessMsg] = useState<string | null>(null);
+
+  // Sync / Search State
+  const [searchQueryEmail, setSearchQueryEmail] = useState('');
+  const [searchingKeys, setSearchingKeys] = useState(false);
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
+
+  // Modal Form State
   const [name, setName] = useState('');
   const [environment, setEnvironment] = useState<'development' | 'production'>('production');
   const [permissions, setPermissions] = useState<('read' | 'write' | 'admin')[]>(['read', 'write']);
-  const [usageLimit, setUsageLimit] = useState<number>(10000);
+  const [usageLimit, setUsageLimit] = useState<number>(10);
+  const [adminPassInput, setAdminPassInput] = useState('');
+  const [adminError, setAdminError] = useState<string | null>(null);
 
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -48,36 +65,144 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const [adminPassInput, setAdminPassInput] = useState('');
-  const [adminError, setAdminError] = useState<string | null>(null);
+  // Claim 10 Request Free API Key
+  const handleGenerateFreeKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFreeKeyLoading(true);
+    setFreeKeySuccessMsg(null);
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+    try {
+      const res = await fetch('/api/v1/keys/generate-free', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: freeKeyName || 'Free User Key',
+          email: freeKeyEmail || 'user@nexus.api'
+        })
+      });
+      const data = await res.json();
+      if (data.status && data.apiKey) {
+        const k = data.apiKey;
+        onCreateKey({
+          name: k.name,
+          key: k.key,
+          prefix: 'nx_free_',
+          status: 'active',
+          environment: 'production',
+          permissions: ['read', 'write'],
+          usageLimit: k.usageLimit || 10
+        });
+        setFreeKeySuccessMsg(`🎁 Free API Key '${k.key}' (10 requests) issued successfully!`);
+      } else {
+        alert('Failed to generate free API key.');
+      }
+    } catch (err) {
+      alert('Error generating free API key.');
+    } finally {
+      setFreeKeyLoading(false);
+    }
+  };
+
+  // Sync / Import Admin-Issued Key by Email or String
+  const handleSyncUserKeys = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQueryEmail.trim()) return;
+    setSearchingKeys(true);
+    setSyncStatusMsg(null);
+
+    try {
+      const res = await fetch(`/api/v1/keys/user-keys?email=${encodeURIComponent(searchQueryEmail.trim())}`);
+      const data = await res.json();
+      if (data.status && Array.isArray(data.keys) && data.keys.length > 0) {
+        let importedCount = 0;
+        data.keys.forEach((serverKey: any) => {
+          const exists = keys.some(existing => existing.key === serverKey.key);
+          if (!exists) {
+            onCreateKey({
+              name: serverKey.name || 'Admin Issued Key',
+              key: serverKey.key,
+              prefix: serverKey.key.substring(0, 8),
+              status: serverKey.status || 'active',
+              environment: serverKey.environment || 'production',
+              permissions: ['read', 'write'],
+              usageLimit: serverKey.usageLimit || 10000
+            });
+            importedCount++;
+          }
+        });
+        setSyncStatusMsg(`Found ${data.keys.length} key(s) on server! (${importedCount} new key imported).`);
+      } else {
+        setSyncStatusMsg(`No registered key found on server for '${searchQueryEmail}'.`);
+      }
+    } catch (err) {
+      setSyncStatusMsg('Error connecting to key lookup service.');
+    } finally {
+      setSearchingKeys(false);
+    }
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-
-    if (adminPassInput !== 'allkinglucifer') {
-      setAdminError('Invalid Master Admin Password! Access denied.');
-      return;
-    }
-
-    const prefix = environment === 'production' ? 'nx_live_' : 'nx_test_';
-    const randomHash = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
-    const fullKey = `${prefix}${randomHash}`;
-
-    onCreateKey({
-      name,
-      key: fullKey,
-      prefix,
-      status: 'active',
-      environment,
-      permissions,
-      usageLimit
-    });
-
-    setName('');
-    setAdminPassInput('');
     setAdminError(null);
-    setIsModalOpen(false);
+
+    if (usageLimit > 10) {
+      // High limit key requires Admin Password verification via server endpoint
+      if (!adminPassInput) {
+        setAdminError('Master Admin Password required for keys with limit > 10 requests.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/v1/admin/create-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            password: adminPassInput,
+            name,
+            environment,
+            usageLimit
+          })
+        });
+        const data = await res.json();
+        if (data.status) {
+          onCreateKey({
+            name,
+            key: data.apiKey,
+            prefix: environment === 'production' ? 'nx_live_' : 'nx_test_',
+            status: 'active',
+            environment,
+            permissions,
+            usageLimit
+          });
+          setName('');
+          setAdminPassInput('');
+          setIsModalOpen(false);
+        } else {
+          setAdminError(data.message || 'Invalid Master Admin Password.');
+        }
+      } catch (err) {
+        setAdminError('Failed to verify admin authorization.');
+      }
+    } else {
+      // Free key creation (10 requests)
+      const prefix = environment === 'production' ? 'nx_live_' : 'nx_test_';
+      const randomHash = Math.random().toString(36).substring(2, 12);
+      const fullKey = `nx_free_${randomHash}`;
+
+      onCreateKey({
+        name,
+        key: fullKey,
+        prefix: 'nx_free_',
+        status: 'active',
+        environment,
+        permissions,
+        usageLimit: 10
+      });
+
+      setName('');
+      setIsModalOpen(false);
+    }
   };
 
   const togglePermission = (perm: 'read' | 'write' | 'admin') => {
@@ -112,8 +237,115 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
         </button>
       </div>
 
-      {/* Keys List */}
+      {/* Free 10-Request Key CTA & Admin Key Import Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Instant Free API Key Generator (10 Requests) */}
+        <div className="p-6 rounded-2xl bg-gradient-to-br from-cyan-950/40 via-slate-900 to-indigo-950/40 border border-cyan-500/30 space-y-4 shadow-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-cyan-400 font-bold text-base">
+              <Gift className="w-5 h-5 text-cyan-400 animate-bounce" />
+              <span>Free Starter API Key (10 Requests)</span>
+            </div>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+              Free Quota
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-300 leading-relaxed">
+            Generate an instant free API key with a 10 request limit. No admin authorization required!
+          </p>
+
+          <form onSubmit={handleGenerateFreeKey} className="space-y-3 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input
+                type="text"
+                placeholder="Project Name (e.g. My Free App)"
+                value={freeKeyName}
+                onChange={(e) => setFreeKeyName(e.target.value)}
+                className="bg-slate-950/80 text-white text-xs font-mono px-3 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-cyan-400"
+              />
+              <input
+                type="email"
+                placeholder="Your Email (e.g. user@gmail.com)"
+                value={freeKeyEmail}
+                onChange={(e) => setFreeKeyEmail(e.target.value)}
+                className="bg-slate-950/80 text-white text-xs font-mono px-3 py-2 rounded-xl border border-slate-800 focus:outline-none focus:border-cyan-400"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={freeKeyLoading}
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {freeKeyLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-300" />}
+              <span>Generate Free Key (10 Requests Limit)</span>
+            </button>
+          </form>
+
+          {freeKeySuccessMsg && (
+            <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{freeKeySuccessMsg}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Sync / Import Keys Issued by Admin */}
+        <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-indigo-400 font-bold text-base">
+              <Search className="w-5 h-5 text-indigo-400" />
+              <span>Import Keys Issued by Admin</span>
+            </div>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+              Account Sync
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-300 leading-relaxed">
+            Did the Admin issue a custom API key for your email? Type your email or key string below to fetch and display it in your key list.
+          </p>
+
+          <form onSubmit={handleSyncUserKeys} className="space-y-3 pt-1">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Enter Email or API Key (e.g. kushanthag@gmail.com)"
+                value={searchQueryEmail}
+                onChange={(e) => setSearchQueryEmail(e.target.value)}
+                className="flex-1 bg-slate-950 text-white text-xs font-mono px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-indigo-400"
+              />
+              <button
+                type="submit"
+                disabled={searchingKeys}
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+              >
+                {searchingKeys ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                <span>Fetch Keys</span>
+              </button>
+            </div>
+          </form>
+
+          {syncStatusMsg && (
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-cyan-300 text-xs font-mono">
+              {syncStatusMsg}
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* Keys List Header */}
       <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <Key className="w-4 h-4 text-cyan-400" />
+            <span>Active Managed Keys ({keys.length})</span>
+          </h3>
+          <span className="text-xs text-slate-400 font-mono">Real-time quota monitoring</span>
+        </div>
         {keys.map((item) => {
           const isCopied = copiedId === item.id;
           const isVisible = visibleKeyId === item.id;

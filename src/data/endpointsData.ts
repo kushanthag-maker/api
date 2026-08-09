@@ -7,7 +7,7 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
     category: 'news',
     method: 'GET',
     path: '/api/v1/news/latest',
-    summary: 'Fetch real-time Sri Lanka Sinhala news list, headlines & search results from Ada Derana.',
+    summary: 'Fetch real-time news list, headlines & search results from Ada Derana intelligence feeds.',
     description: 'Scrapes real-time headlines, relative timestamps, lead thumbnails, and direct article URLs directly from Sinhala Ada Derana (sinhala.adaderana.lk). Requires a valid API Key.',
     rateLimit: '100 req/min',
     params: [

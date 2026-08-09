@@ -76,6 +76,20 @@ export const AnalyticsView: React.FC = () => {
   const endpointTrafficList = stats && stats.endpointTraffic.length > 0 ? stats.endpointTraffic : [];
   const recentLogsList = stats ? stats.recentLogs : [];
 
+  const maskUrlParams = (pathStr: string) => {
+    if (!pathStr) return '/';
+    return pathStr.replace(/([?&])(apiKey|key|api_key|token|password|secret)=([^&]*)/gi, '$1$2=••••••••');
+  };
+
+  const maskKeyDisplay = (keyStr: string) => {
+    if (!keyStr || keyStr === 'None' || keyStr === 'Anonymous') return 'Anonymous';
+    if (keyStr.includes('••••')) return keyStr;
+    if (keyStr.length > 10) {
+      return `${keyStr.substring(0, 6)}••••${keyStr.slice(-3)}`;
+    }
+    return '••••••••';
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
@@ -235,7 +249,7 @@ export const AnalyticsView: React.FC = () => {
                   <th className="py-2.5 px-3">Endpoint Path</th>
                   <th className="py-2.5 px-3">Status</th>
                   <th className="py-2.5 px-3">Latency</th>
-                  <th className="py-2.5 px-3">API Key Used</th>
+                  <th className="py-2.5 px-3">Auth Token (Masked)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -249,7 +263,9 @@ export const AnalyticsView: React.FC = () => {
                         {log.method}
                       </span>
                     </td>
-                    <td className="py-2 px-3 font-semibold text-white max-w-xs truncate">{log.path}</td>
+                    <td className="py-2 px-3 font-semibold text-white max-w-xs truncate" title={maskUrlParams(log.path)}>
+                      {maskUrlParams(log.path)}
+                    </td>
                     <td className="py-2 px-3">
                       <span className={`inline-flex items-center gap-1 font-bold ${
                         log.statusCode < 400 ? 'text-emerald-400' : 'text-rose-400'
@@ -259,7 +275,11 @@ export const AnalyticsView: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-2 px-3 text-cyan-300 font-bold">{log.latencyMs} ms</td>
-                    <td className="py-2 px-3 text-slate-400">{log.apiKey}</td>
+                    <td className="py-2 px-3 text-slate-400 font-mono text-[11px]">
+                      <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-cyan-300">
+                        {maskKeyDisplay(log.apiKey)}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

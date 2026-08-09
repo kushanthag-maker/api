@@ -15,7 +15,8 @@ import {
   X,
   FileText,
   Clock,
-  Coins
+  Coins,
+  Key
 } from 'lucide-react';
 
 interface NewsItem {
@@ -161,7 +162,7 @@ export const NewsExplorer: React.FC = () => {
               Ada Derana News & Category Hub
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
-              Real-time automated scraping & structured JSON REST endpoint for Ada Derana News in Sri Lanka.
+              Real-time automated scraping & structured JSON REST endpoint for Ada Derana News feeds.
             </p>
           </div>
 

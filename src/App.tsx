@@ -48,13 +48,14 @@ export default function App() {
       localStorage.setItem('nexus_api_keys', JSON.stringify(keys));
       keys.forEach(k => {
         if (k.status === 'active') {
-          fetch('/api/v1/keys/register', {
+          fetch('/api/v1/keys/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              apiKey: k.key,
+              key: k.key,
               name: k.name,
-              adminPassword: 'allkinglucifer'
+              usageLimit: k.usageLimit,
+              environment: k.environment
             })
           }).catch(() => {});
         }
@@ -73,16 +74,17 @@ export default function App() {
       usageToday: 0
     };
 
-    // Register key on server
-    fetch('/api/v1/keys/register', {
+    // Register key on server using public sync
+    fetch('/api/v1/keys/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        apiKey: newKeyItem.key,
+        key: newKeyItem.key,
         name: newKeyItem.name,
-        adminPassword: 'allkinglucifer'
+        usageLimit: newKeyItem.usageLimit,
+        environment: newKeyItem.environment
       })
-    }).catch(err => console.error('Key registration failed', err));
+    }).catch(err => console.error('Key sync failed', err));
 
     setKeys(prev => [newKeyItem, ...prev]);
   };
@@ -140,7 +142,7 @@ export default function App() {
                   Why Developers Choose <span className="text-cyan-400">Nexus News API</span>
                 </h2>
                 <p className="text-sm text-slate-400">
-                  Engineered from the ground up for real-time Sri Lanka news scraping, high performance, and direct API key authentication.
+                  Engineered from the ground up for real-time news intelligence, high performance, and direct API key authentication.
                 </p>
               </div>
 

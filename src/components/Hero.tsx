@@ -37,7 +37,7 @@ export const Hero: React.FC<HeroProps> = ({
       })
       .catch(() => {});
   }, []);
-  const sampleCurl = `curl -X GET "https://apinexusdev-blush.vercel.app/api/v1/news/latest?apiKey=nx_live_9a8f23c10b48e71d932e" \\
+  const sampleCurl = `curl -X GET "https://apinexusdev-blush.vercel.app/api/v1/news/latest?apiKey=YOUR_NEXUS_API_KEY" \\
   -H "Accept: application/json"`;
 
   const handleCopy = () => {
@@ -60,7 +60,7 @@ export const Hero: React.FC<HeroProps> = ({
         <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Sri Lanka News Scraper API Gateway</span>
+            <span>Nexus High-Performance Unified API Gateway</span>
           </div>
         </div>
 
