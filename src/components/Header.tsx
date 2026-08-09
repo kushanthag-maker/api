@@ -9,18 +9,12 @@ import {
   DollarSign, 
   Menu, 
   X, 
-  CheckCircle2, 
-  ArrowUpRight,
   Boxes,
-  Cpu,
   ShieldAlert,
-  User,
   LogOut,
-  Sparkles,
-  FileText,
-  Coins,
   Newspaper,
-  Bug
+  Bug,
+  FileText
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -32,11 +26,8 @@ interface HeaderProps {
   currentUser: UserProfile | null;
   onOpenLoginModal: () => void;
   onLogout: () => void;
-  onOpenNexusAiModal: () => void;
   onOpenRulesModal: () => void;
-  onOpenCoinsModal: () => void;
   onOpenReportModal?: () => void;
-  coinsBalance?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -48,18 +39,15 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser,
   onOpenLoginModal,
   onLogout,
-  onOpenNexusAiModal,
   onOpenRulesModal,
-  onOpenCoinsModal,
-  onOpenReportModal,
-  coinsBalance = 250
+  onOpenReportModal
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: Zap },
     { id: 'docs', label: 'API Reference', icon: BookOpen },
-    { id: 'news', label: 'News', icon: Newspaper },
+    { id: 'news', label: 'News API', icon: Newspaper },
     { id: 'playground', label: 'Console Sandbox', icon: Terminal },
     { id: 'keys', label: 'API Keys', icon: Key, badge: keyCount > 0 ? keyCount : undefined },
     { id: 'analytics', label: 'Telemetry', icon: BarChart2 },
@@ -82,13 +70,13 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-bold tracking-tight text-white font-mono">
-                  NEXUS<span className="text-cyan-400">.API</span>
+                  NEXUS<span className="text-cyan-400">.NEWS</span>
                 </span>
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
-                  v1.4.0
+                  v2.0
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 hidden sm:block">Unified Developer Gateway</p>
+              <p className="text-[10px] text-slate-400 hidden sm:block">Sri Lanka News Scraper API Gateway</p>
             </div>
           </div>
 
@@ -119,20 +107,9 @@ export const Header: React.FC<HeaderProps> = ({
             })}
           </nav>
 
-          {/* Action CTAs, Nexus Coins Vault, Nexus AI Engine & Google Login */}
+          {/* Action CTAs & Google Login */}
           <div className="flex items-center gap-2">
             
-            {/* Nexus Coins & Data Cards Vault Trigger */}
-            <button
-              onClick={onOpenCoinsModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all shadow-md shadow-amber-500/5 cursor-pointer"
-              title="Nexus Coins & Data Card Vault"
-            >
-              <Coins className="w-4 h-4 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
-              <span className="font-extrabold">{coinsBalance}</span>
-              <span className="hidden sm:inline text-[10px] uppercase font-semibold text-amber-300">Coins</span>
-            </button>
-
             {/* Rules & Report Bug Buttons */}
             <button
               onClick={onOpenRulesModal}
@@ -194,7 +171,6 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-
             {/* Mobile menu trigger */}
             <div className="flex lg:hidden items-center gap-1">
               <button
@@ -248,20 +224,9 @@ export const Header: React.FC<HeaderProps> = ({
               <FileText className="w-4 h-4 text-cyan-400" />
               <span>Platform Rules & Guidelines</span>
             </button>
-            <button
-              onClick={() => {
-                onOpenNexusAiModal();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-cyan-500 text-slate-950 font-bold text-xs"
-            >
-              <Cpu className="w-4 h-4" />
-              <span>Nexus AI Engine Control</span>
-            </button>
           </div>
         </div>
       )}
     </header>
   );
 };
-

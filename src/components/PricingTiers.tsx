@@ -27,7 +27,7 @@ export const PricingTiers: React.FC<PricingTiersProps> = ({ onSelectPlan }) => {
       requestsPerMonth: '10,000 requests / month',
       rateLimit: '120 req / minute',
       features: [
-        'Access to AI, Auth, Data & Utility APIs',
+        'Access to Real-Time Sri Lanka News Scraper API',
         'Interactive Developer Sandbox Console',
         'Up to 3 Active API Keys',
         '28 Global Edge Routing Locations',

@@ -8,10 +8,7 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { PricingTiers } from './components/PricingTiers';
 import { VercelDeployModal } from './components/VercelDeployModal';
 import { LoginModal } from './components/LoginModal';
-import { BanAppealModal } from './components/BanAppealModal';
 import { SiteRulesModal } from './components/SiteRulesModal';
-import { NexusAiControlModal } from './components/NexusAiControlModal';
-import { CoinsAndDataCardsModal } from './components/CoinsAndDataCardsModal';
 import { AdminPanel } from './components/AdminPanel';
 import { NewsExplorer } from './components/NewsExplorer';
 import { ReportIssueModal } from './components/ReportIssueModal';
@@ -19,17 +16,9 @@ import { IntroAnimation } from './components/IntroAnimation';
 import { Footer } from './components/Footer';
 import { ApiKey, UserProfile } from './types';
 import { 
-  Boxes, 
   Zap, 
-  ShieldCheck, 
-  Globe2, 
   Terminal, 
-  Key, 
-  ArrowRight,
-  Code,
-  Sparkles,
-  Layers,
-  Check
+  ArrowRight
 } from 'lucide-react';
 
 const INITIAL_KEYS: ApiKey[] = [
@@ -65,17 +54,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [vercelModalOpen, setVercelModalOpen] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
-  const [appealModalOpen, setAppealModalOpen] = useState<boolean>(false);
   const [rulesModalOpen, setRulesModalOpen] = useState<boolean>(false);
-  const [nexusAiModalOpen, setNexusAiModalOpen] = useState<boolean>(false);
-  const [coinsModalOpen, setCoinsModalOpen] = useState<boolean>(false);
   const [reportModalOpen, setReportModalOpen] = useState<boolean>(false);
   const [showIntro, setShowIntro] = useState<boolean>(() => {
     return !sessionStorage.getItem('nexus_intro_shown');
   });
-
-  const [bannedEmailForAppeal, setBannedEmailForAppeal] = useState<string>('');
-  const [bannedReasonForAppeal, setBannedReasonForAppeal] = useState<string>('');
 
   // User State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
@@ -138,18 +121,6 @@ export default function App() {
     setKeys(prev => prev.filter(k => k.id !== keyId));
   };
 
-  const handleOpenAppeal = (email?: string, reason?: string) => {
-    setBannedEmailForAppeal(email || '');
-    setBannedReasonForAppeal(reason || 'Platform rule violation.');
-    setAppealModalOpen(true);
-  };
-
-  const handleUpdateUserCoins = (newBalance: number) => {
-    if (currentUser) {
-      setCurrentUser({ ...currentUser, coinsBalance: newBalance });
-    }
-  };
-
   const activeKeys = keys.filter(k => k.status === 'active');
 
   return (
@@ -175,13 +146,9 @@ export default function App() {
         currentUser={currentUser}
         onOpenLoginModal={() => setLoginModalOpen(true)}
         onLogout={() => setCurrentUser(null)}
-        onOpenNexusAiModal={() => setNexusAiModalOpen(true)}
         onOpenRulesModal={() => setRulesModalOpen(true)}
-        onOpenCoinsModal={() => setCoinsModalOpen(true)}
         onOpenReportModal={() => setReportModalOpen(true)}
-        coinsBalance={currentUser?.coinsBalance ?? 250}
       />
-
 
       {/* Main Content Body */}
       <main className="flex-1">
@@ -197,10 +164,10 @@ export default function App() {
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
               <div className="text-center max-w-3xl mx-auto space-y-3">
                 <h2 className="text-3xl font-bold tracking-tight text-white">
-                  Why Developers Choose <span className="text-cyan-400">Nexus API</span>
+                  Why Developers Choose <span className="text-cyan-400">Nexus News API</span>
                 </h2>
                 <p className="text-sm text-slate-400">
-                  Engineered from the ground up for extreme speed, developer ergonomics, and native Vercel hosting readiness.
+                  Engineered from the ground up for real-time Sri Lanka news scraping, high performance, and direct API key authentication.
                 </p>
               </div>
 
@@ -210,9 +177,9 @@ export default function App() {
                   <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
                     <Zap className="w-5 h-5" />
                   </div>
-                  <h3 className="text-lg font-bold text-white">Sub-20ms Edge Gateway</h3>
+                  <h3 className="text-lg font-bold text-white">Sub-20ms News Gateway</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Anycast routing across 28 edge points guarantees sub-20ms latency worldwide with instant failovers.
+                    Direct scraping from Ada Derana with instant title, paragraph, timestamp, and image extraction.
                   </p>
                 </div>
 
@@ -220,9 +187,9 @@ export default function App() {
                   <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
                     <Terminal className="w-5 h-5" />
                   </div>
-                  <h3 className="text-lg font-bold text-white">Multi-SDK Code Generator</h3>
+                  <h3 className="text-lg font-bold text-white">API Key Authentication</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Instant production-ready snippets in cURL, JavaScript, Python, Go, Rust, and PHP with 1-click clipboard copy.
+                    Secure API key verification without complex coin management or credit deductions.
                   </p>
                 </div>
 
@@ -243,7 +210,7 @@ export default function App() {
               {/* Quick Start Teaser CTA */}
               <div className="p-8 rounded-2xl bg-gradient-to-r from-slate-900 via-cyan-950/30 to-indigo-950/40 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-2xl">
                 <div className="space-y-1">
-                  <h3 className="text-xl font-bold text-white">Ready to test Nexus API in your app?</h3>
+                  <h3 className="text-xl font-bold text-white">Ready to test News API in your app?</h3>
                   <p className="text-xs text-slate-300">
                     Explore the live interactive documentation and send test requests in under 30 seconds.
                   </p>
@@ -281,13 +248,14 @@ export default function App() {
             onCreateKey={handleCreateKey}
             onRevokeKey={handleRevokeKey}
             onDeleteKey={handleDeleteKey}
+            onGoToAdmin={() => setActiveTab('admin')}
           />
         )}
 
         {activeTab === 'analytics' && <AnalyticsView />}
 
         {activeTab === 'pricing' && (
-          <PricingTiers onSelectPlan={(plan) => setActiveTab('keys')} />
+          <PricingTiers onSelectPlan={() => setActiveTab('keys')} />
         )}
 
         {activeTab === 'admin' && <AdminPanel />}
@@ -310,51 +278,12 @@ export default function App() {
         isOpen={loginModalOpen}
         onClose={() => setLoginModalOpen(false)}
         onLoginSuccess={(user) => setCurrentUser(user)}
-        onOpenAppeal={(email, reason) => handleOpenAppeal(email, reason)}
-      />
-
-      {/* Unban Appeal Modal evaluated by Nexus AI */}
-      <BanAppealModal
-        isOpen={appealModalOpen}
-        onClose={() => setAppealModalOpen(false)}
-        defaultEmail={bannedEmailForAppeal}
-        defaultReason={bannedReasonForAppeal}
-        onUnbanSuccess={(unbannedEmail) => {
-          if (currentUser && currentUser.email === unbannedEmail) {
-            setCurrentUser({ ...currentUser, isBanned: false });
-          }
-        }}
       />
 
       {/* Platform Rules Modal */}
       <SiteRulesModal
         isOpen={rulesModalOpen}
         onClose={() => setRulesModalOpen(false)}
-        onOpenAppeal={() => handleOpenAppeal()}
-      />
-
-      {/* Nexus AI Engine Master Control Modal */}
-      <NexusAiControlModal
-        isOpen={nexusAiModalOpen}
-        onClose={() => setNexusAiModalOpen(false)}
-        onOpenAppeal={() => {
-          setNexusAiModalOpen(false);
-          handleOpenAppeal();
-        }}
-        currentUser={currentUser}
-        onOpenCoinsModal={() => {
-          setNexusAiModalOpen(false);
-          setCoinsModalOpen(true);
-        }}
-        onUpdateUserCoins={handleUpdateUserCoins}
-      />
-
-      {/* Nexus Coins & Data Cards Vault Modal */}
-      <CoinsAndDataCardsModal
-        isOpen={coinsModalOpen}
-        onClose={() => setCoinsModalOpen(false)}
-        currentUser={currentUser}
-        onCoinsUpdated={handleUpdateUserCoins}
       />
 
       {/* Bug & Issue Reporting Modal */}
@@ -367,4 +296,3 @@ export default function App() {
     </div>
   );
 }
-

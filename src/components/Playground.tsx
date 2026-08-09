@@ -292,43 +292,31 @@ export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
                 type="button"
                 onClick={() => {
                   setMethod('GET');
-                  setUrl(`${hostBase}/api/ytdl?apiKey=nx_live_demo_982a3&url=https%3A%2F%2Fyoutube.com%2Fwatch%3Fv%3D0geqOYqwL0s&type=mp4&quality=360`);
+                  setUrl(`${hostBase}/api/v1/news/latest?apiKey=${selectedKey}`);
                 }}
                 className="px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shrink-0 cursor-pointer"
               >
-                GET /api/ytdl
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMethod('POST');
-                  setUrl(`${hostBase}/api/v1/utility/youtube-download`);
-                  setRequestBody(JSON.stringify({ url: 'https://youtube.com/watch?v=0geqOYqwL0s', quality: '1080p', format: 'mp4' }, null, 2));
-                }}
-                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shrink-0 cursor-pointer"
-              >
-                POST /api/v1/utility/youtube-download
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMethod('POST');
-                  setUrl(`${hostBase}/api/v1/ai/generate`);
-                  setRequestBody(JSON.stringify({ prompt: 'Explain quantum computing in 2 sentences', model: 'nexus-ai-flash' }, null, 2));
-                }}
-                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shrink-0 cursor-pointer"
-              >
-                POST /api/v1/ai/generate
+                GET /api/v1/news/latest
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setMethod('GET');
-                  setUrl(`${hostBase}/nx/demo`);
+                  setUrl(`${hostBase}/api/v1/news/latest?category=hot&apiKey=${selectedKey}`);
                 }}
                 className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shrink-0 cursor-pointer"
               >
-                GET /nx/demo
+                GET Hot News
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMethod('GET');
+                  setUrl(`${hostBase}/api/v1/news/detail?apiKey=${selectedKey}&url=https%3A%2F%2Fsinhala.adaderana.lk%2Fnews_official.php%3Fnid%3D192834`);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shrink-0 cursor-pointer"
+              >
+                GET News Detail
               </button>
             </div>
 

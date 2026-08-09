@@ -337,11 +337,8 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
           {/* Category Filter Chips */}
           <div className="flex flex-wrap gap-1.5 p-1 bg-slate-900/80 rounded-xl border border-slate-800 text-xs">
             {[
-              { id: 'all', label: 'All' },
-              { id: 'ai', label: 'AI' },
-              { id: 'auth', label: 'Auth' },
-              { id: 'data', label: 'Data' },
-              { id: 'utility', label: 'Utility' }
+              { id: 'all', label: 'All Endpoints' },
+              { id: 'news', label: 'News Scraper API' }
             ].map(cat => (
               <button
                 key={cat.id}

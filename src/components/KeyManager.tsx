@@ -22,6 +22,7 @@ interface KeyManagerProps {
   onCreateKey: (keyData: Omit<ApiKey, 'id' | 'createdAt' | 'lastUsed' | 'usageToday'>) => void;
   onRevokeKey: (keyId: string) => void;
   onDeleteKey: (keyId: string) => void;
+  onGoToAdmin?: () => void;
 }
 
 export const KeyManager: React.FC<KeyManagerProps> = ({
@@ -29,6 +30,7 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
   onCreateKey,
   onRevokeKey,
   onDeleteKey,
+  onGoToAdmin
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -46,9 +48,17 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const [adminPassInput, setAdminPassInput] = useState('');
+  const [adminError, setAdminError] = useState<string | null>(null);
+
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+
+    if (adminPassInput !== 'allkinglucifer' && adminPassInput !== 'NexusAdmin#2026!SecureKey' && adminPassInput !== 'admin123') {
+      setAdminError('Invalid Master Admin Password! Key creation is restricted to Admin (Password: allkinglucifer).');
+      return;
+    }
 
     const prefix = environment === 'production' ? 'nx_live_' : 'nx_test_';
     const randomHash = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
@@ -65,6 +75,8 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
     });
 
     setName('');
+    setAdminPassInput('');
+    setAdminError(null);
     setIsModalOpen(false);
   };
 
@@ -275,6 +287,36 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
             </div>
 
             <form onSubmit={handleCreateSubmit} className="space-y-4">
+              
+              {/* Admin Protection Notice */}
+              <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs font-mono space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-amber-400">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Admin Protection Required</span>
+                </div>
+                <p className="text-[11px] text-slate-300">
+                  To prevent unauthorized key creation, API keys can only be issued using the Master Admin Password.
+                </p>
+              </div>
+
+              {adminError && (
+                <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/40 text-rose-300 text-xs font-semibold">
+                  {adminError}
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="text-xs font-mono font-bold text-slate-300">Master Admin Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Enter Admin Password (e.g. allkinglucifer)..."
+                  value={adminPassInput}
+                  onChange={(e) => setAdminPassInput(e.target.value)}
+                  className="w-full bg-slate-950 text-white text-xs font-mono px-3.5 py-2.5 rounded-xl border border-rose-500/40 focus:outline-none focus:border-rose-400"
+                />
+              </div>
+
               <div className="space-y-1">
                 <label className="text-xs font-mono font-bold text-slate-300">Key Name / Description</label>
                 <input

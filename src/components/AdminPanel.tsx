@@ -64,6 +64,43 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
   // Bug Reports State
   const [bugReports, setBugReports] = useState<any[]>([]);
 
+  // Admin Key Generator State
+  const [newKeyUserEmail, setNewKeyUserEmail] = useState<string>('');
+  const [newKeyEnv, setNewKeyEnv] = useState<'production' | 'development'>('production');
+  const [generatingKey, setGeneratingKey] = useState<boolean>(false);
+  const [generatedKeyResult, setGeneratedKeyResult] = useState<string | null>(null);
+
+  const handleAdminGenerateKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newKeyUserEmail.trim()) return;
+    setGeneratingKey(true);
+    setGeneratedKeyResult(null);
+    try {
+      const res = await safeFetch('/api/v1/admin/create-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: 'allkinglucifer',
+          email: newKeyUserEmail,
+          environment: newKeyEnv
+        })
+      });
+      const data = res.data;
+      if (data.status) {
+        setGeneratedKeyResult(data.apiKey);
+        setActionSuccessMsg(`Generated API Key '${data.apiKey}' for user ${data.userEmail}!`);
+        setNewKeyUserEmail('');
+        fetchAdminData();
+      } else {
+        alert(data.message || 'Failed to generate key');
+      }
+    } catch (err) {
+      alert('Error generating API key');
+    } finally {
+      setGeneratingKey(false);
+    }
+  };
+
   // Ban Modal State
   const [banUserEmail, setBanUserEmail] = useState<string | null>(null);
   const [banReasonInput, setBanReasonInput] = useState<string>('Platform rule violation.');
@@ -518,6 +555,77 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
           </table>
         </div>
 
+      </div>
+
+      {/* Admin API Key Generator Section */}
+      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-white font-mono flex items-center gap-2">
+              <Key className="w-5 h-5 text-cyan-400" />
+              <span>Admin API Key Generator (Restricted Issuer)</span>
+            </h2>
+            <p className="text-xs text-slate-400">
+              Only Admin can generate and issue new API Keys for platform users.
+            </p>
+          </div>
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+            ADMIN ONLY KEY ISSUER
+          </span>
+        </div>
+
+        <form onSubmit={handleAdminGenerateKey} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          <div className="space-y-1 sm:col-span-1">
+            <label className="text-xs font-semibold text-slate-300 font-mono">Target User Email</label>
+            <input
+              type="email"
+              required
+              placeholder="e.g. user@gmail.com"
+              value={newKeyUserEmail}
+              onChange={(e) => setNewKeyUserEmail(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-300 font-mono">Key Environment</label>
+            <select
+              value={newKeyEnv}
+              onChange={(e: any) => setNewKeyEnv(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+            >
+              <option value="production">Production (nx_live_)</option>
+              <option value="development">Development (nx_test_)</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            disabled={generatingKey}
+            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer font-mono"
+          >
+            {generatingKey ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+            <span>{generatingKey ? 'Issuing...' : 'Generate API Key'}</span>
+          </button>
+        </form>
+
+        {generatedKeyResult && (
+          <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 font-mono text-xs flex items-center justify-between">
+            <div>
+              <span className="text-slate-400 mr-2">Generated Key:</span>
+              <span className="font-bold text-cyan-200">{generatedKeyResult}</span>
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(generatedKeyResult);
+                alert('Copied generated API key to clipboard!');
+              }}
+              className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold cursor-pointer"
+            >
+              Copy Key
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Promo Code Generator & Active Codes Grid */}

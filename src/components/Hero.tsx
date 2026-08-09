@@ -8,8 +8,6 @@ import {
   Globe2, 
   ShieldCheck, 
   Zap, 
-  Layers,
-  Cpu,
   Boxes
 } from 'lucide-react';
 
@@ -22,13 +20,10 @@ interface HeroProps {
 export const Hero: React.FC<HeroProps> = ({
   onExploreDocs,
   onOpenSandbox,
-  onOpenVercelModal,
 }) => {
   const [copied, setCopied] = useState(false);
-  const sampleCurl = `curl -X POST "https://apinexusdev-blush.vercel.app/api/v1/ai/generate" \\
-  -H "Authorization: Bearer nx_live_demo_982a3" \\
-  -H "Content-Type: application/json" \\
-  -d '{"prompt": "Hello Nexus API"}'`;
+  const sampleCurl = `curl -X GET "https://apinexusdev-blush.vercel.app/api/v1/news/latest?apiKey=nx_live_9a8f23c10b48e71d932e" \\
+  -H "Accept: application/json"`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(sampleCurl);
@@ -50,20 +45,20 @@ export const Hero: React.FC<HeroProps> = ({
         <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Nexus Unified API Platform v1.4</span>
+            <span>Sri Lanka News Scraper API Gateway</span>
           </div>
         </div>
 
         {/* Main Title & Subtitle */}
         <div className="text-center max-w-4xl mx-auto space-y-6">
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-[1.15]">
-            Next-Gen Unified API Suite for{' '}
+            Real-Time Sinhala News Scraping API for{' '}
             <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
-              Modern Developers
+              Developers & Apps
             </span>
           </h1>
           <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
-            High-performance AI inference, threat intelligence, forex & climate sync, and high-speed edge utilities—all behind one unified, ultra-fast API gateway.
+            Scrape real-time headlines, full article paragraphs, timestamps, images, and category feeds directly from Ada Derana using a single API key.
           </p>
 
           {/* Action CTAs */}
@@ -73,7 +68,7 @@ export const Hero: React.FC<HeroProps> = ({
               className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold text-sm transition-all shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 cursor-pointer"
             >
               <Zap className="w-4 h-4 fill-current" />
-              <span>Explore API Reference</span>
+              <span>Explore News API Reference</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -96,7 +91,7 @@ export const Hero: React.FC<HeroProps> = ({
                 <span className="w-3 h-3 rounded-full bg-amber-500/80"></span>
                 <span className="w-3 h-3 rounded-full bg-emerald-500/80"></span>
               </span>
-              <span className="text-xs font-mono text-slate-400 ml-2">bash — nexus-api-quickstart</span>
+              <span className="text-xs font-mono text-slate-400 ml-2">bash — news-api-quickstart</span>
             </div>
             <button
               onClick={handleCopy}
@@ -137,10 +132,10 @@ export const Hero: React.FC<HeroProps> = ({
           <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 text-center space-y-1">
             <div className="flex items-center justify-center gap-1.5 text-indigo-400 text-xs font-mono font-semibold uppercase tracking-wider">
               <Globe2 className="w-3.5 h-3.5" />
-              <span>Global Edge</span>
+              <span>Ada Derana Sync</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">28 Regions</div>
-            <p className="text-[11px] text-slate-400">Anycast global routing</p>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">Real-Time</div>
+            <p className="text-[11px] text-slate-400">Live news scraping</p>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 text-center space-y-1">
@@ -155,10 +150,10 @@ export const Hero: React.FC<HeroProps> = ({
           <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 text-center space-y-1">
             <div className="flex items-center justify-center gap-1.5 text-amber-400 text-xs font-mono font-semibold uppercase tracking-wider">
               <Boxes className="w-3.5 h-3.5" />
-              <span>Total Requests</span>
+              <span>Auth Method</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">3.8 Billion+</div>
-            <p className="text-[11px] text-slate-400">Served across developer apps</p>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">API Key</div>
+            <p className="text-[11px] text-slate-400">Instant key verification</p>
           </div>
         </div>
 
