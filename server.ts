@@ -31,6 +31,8 @@ async function getMongoDb(): Promise<Db | null> {
 // Global Total Requests Counter & User Keys Map
 let globalApiRequestsCounter = 12480;
 const userApiKeysStore: Record<string, string> = {};
+const claimedFreeEmails = new Set<string>();
+const claimedFreeIPs = new Set<string>();
 async function incrementGlobalRequests() {
   globalApiRequestsCounter++;
   try {
@@ -566,12 +568,46 @@ export function buildApp(): express.Application {
     }
   });
 
-  // Generate Free API Key Endpoint (Public - 10 Requests Limit)
+  // Check Free API Key Status (Public)
+  app.get('/api/v1/keys/free-status', (req: express.Request, res: express.Response) => {
+    const cleanEmail = ((req.query.email || '') as string).trim().toLowerCase();
+    const rawIp = (req.headers['x-forwarded-for'] as string || req.ip || '').split(',')[0].trim();
+
+    const isEmailLocked = Boolean(cleanEmail && claimedFreeEmails.has(cleanEmail));
+    const isIpLocked = Boolean(rawIp && rawIp !== '127.0.0.1' && rawIp !== '::1' && claimedFreeIPs.has(rawIp));
+    const isLocked = isEmailLocked || isIpLocked;
+
+    return res.json({
+      status: true,
+      isLocked,
+      message: isLocked ? '🔒 Free starter API key has already been claimed for this account or network.' : 'Free starter trial available.'
+    });
+  });
+
+  // Generate Free API Key Endpoint (Public - 10 Requests Limit, Permanent One-Time Claim Lock)
   app.post('/api/v1/keys/generate-free', (req: express.Request, res: express.Response) => {
     const { name, email } = req.body || {};
-    const cleanEmail = (email || 'user@nexus.api').trim().toLowerCase();
-    const cleanName = (name || 'Free User Project').trim();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.ip || '').split(',')[0].trim();
 
+    // Strict Lock Enforcement: Check if email or IP already claimed a free key
+    if (cleanEmail && claimedFreeEmails.has(cleanEmail)) {
+      return res.status(403).json({
+        status: false,
+        code: 'FREE_KEY_ALREADY_CLAIMED',
+        message: '🔒 PERMANENT LOCK: A free 10-request API key has ALREADY been claimed for this email. Re-claiming is strictly locked permanently.'
+      });
+    }
+
+    if (clientIp && clientIp !== '127.0.0.1' && clientIp !== '::1' && claimedFreeIPs.has(clientIp)) {
+      return res.status(403).json({
+        status: false,
+        code: 'FREE_KEY_ALREADY_CLAIMED_IP',
+        message: '🔒 PERMANENT LOCK: A free 10-request API key has ALREADY been claimed from this network/device. Re-claiming is strictly locked permanently.'
+      });
+    }
+
+    const cleanName = (name || 'Free User Project').trim();
     const randomHash = crypto.randomBytes(8).toString('hex');
     const freeKeyString = `nx_free_${randomHash}`;
 
@@ -579,7 +615,7 @@ export function buildApp(): express.Application {
       id: `key_free_${Date.now()}`,
       key: freeKeyString,
       name: cleanName,
-      email: cleanEmail,
+      email: cleanEmail || 'freeuser@nexus.api',
       createdAt: new Date().toISOString().split('T')[0],
       status: 'active',
       environment: 'production',
@@ -587,12 +623,16 @@ export function buildApp(): express.Application {
       usageToday: 0
     };
 
+    // Permanently record lock for this email and IP
+    if (cleanEmail) claimedFreeEmails.add(cleanEmail);
+    if (clientIp && clientIp !== '127.0.0.1' && clientIp !== '::1') claimedFreeIPs.add(clientIp);
+
     serverKeysStore.set(freeKeyString, freeKeyRecord);
 
     return res.json({
       status: true,
       apiKey: freeKeyRecord,
-      message: '🎁 Free API Key generated successfully! (Limit: 10 requests)'
+      message: '🎁 Free API Key generated successfully! (Limit: 10 requests). Free claims for this account are now permanently locked.'
     });
   });
 
@@ -715,6 +755,9 @@ export function buildApp(): express.Application {
       name: k.name,
       apiKey: k.key,
       status: k.status === 'revoked' ? 'banned' : 'active',
+      usageLimit: k.usageLimit || 10000,
+      usageToday: k.usageToday || 0,
+      coinsBalance: 500,
       createdAt: k.createdAt
     }));
 

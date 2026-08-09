@@ -30,6 +30,8 @@ interface AdminUserRecord {
   coinsBalance: number;
   status: 'active' | 'banned' | 'permanent_banned';
   banReason?: string;
+  usageLimit?: number;
+  usageToday?: number;
   createdAt: string;
 }
 
@@ -616,11 +618,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
                     </td>
 
                     <td className="p-3.5 font-mono text-[11px] text-slate-300">
-                      <span className="px-2 py-1 rounded bg-slate-950 border border-slate-800 font-mono">
-                        {maskKeys && user.apiKey && user.apiKey.length > 12 
-                          ? `${user.apiKey.substring(0, 8)}••••••••` 
-                          : user.apiKey}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="px-2 py-1 rounded bg-slate-950 border border-slate-800 font-mono">
+                          {maskKeys && user.apiKey && user.apiKey.length > 12 
+                            ? `${user.apiKey.substring(0, 8)}••••••••` 
+                            : user.apiKey}
+                        </span>
+                        <div className="flex items-center gap-1.5 text-[10px]">
+                          <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 font-bold">
+                            ⚡ Limit: {(user.usageLimit || 10000).toLocaleString()} reqs
+                          </span>
+                          <span className="text-slate-400">
+                            (Used: {user.usageToday || 0})
+                          </span>
+                        </div>
+                      </div>
                     </td>
 
                     <td className="p-3.5 font-bold text-amber-400 font-mono">
@@ -652,8 +664,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
                       {/* Edit Key Quota Limit Button */}
                       <button
                         onClick={() => {
-                          setEditingKeyTarget({ key: user.apiKey, email: user.email, currentLimit: 10000 });
-                          setNewLimitInput(10000);
+                          const limit = user.usageLimit || 10000;
+                          setEditingKeyTarget({ key: user.apiKey, email: user.email, currentLimit: limit });
+                          setNewLimitInput(limit);
                         }}
                         className="px-2.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold transition-all text-[11px] cursor-pointer"
                       >
