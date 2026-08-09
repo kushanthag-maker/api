@@ -419,7 +419,7 @@ export function buildApp(): express.Application {
   // Admin Panel API Endpoints
   app.post('/api/v1/admin/login', (req: express.Request, res: express.Response) => {
     const { password } = req.body || {};
-    if (password === 'allkinglucifer' || password === 'NexusAdmin#2026!SecureKey' || password === 'admin123') {
+    if (password === 'allkinglucifer') {
       return res.json({ status: 'success', authenticated: true, token: 'admin_session_token_9988' });
     }
     return res.status(401).json({ status: 'error', message: 'Invalid Admin Password.' });
@@ -441,7 +441,7 @@ export function buildApp(): express.Application {
   // Admin Create API Key Endpoint
   app.post('/api/v1/admin/create-key', (req: express.Request, res: express.Response) => {
     const { password, email, environment, name } = req.body || {};
-    if (password !== 'allkinglucifer' && password !== 'NexusAdmin#2026!SecureKey' && password !== 'admin123') {
+    if (password !== 'allkinglucifer') {
       return res.status(401).json({ status: false, message: 'Invalid Admin Password.' });
     }
 

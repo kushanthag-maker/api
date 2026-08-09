@@ -140,7 +140,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      const res = await safeFetch('/api/v1/admin/users?password=' + encodeURIComponent(sessionStorage.getItem('nexus_admin_token') || 'NexusAdmin#2026!SecureKey'));
+      const res = await safeFetch('/api/v1/admin/users?password=' + encodeURIComponent(sessionStorage.getItem('nexus_admin_token') || 'allkinglucifer'));
       const data = res.data;
       if (data.status === 'success') {
         setUsers(data.users || []);
@@ -159,7 +159,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          adminPassword: 'NexusAdmin#2026!SecureKey',
+          adminPassword: 'allkinglucifer',
           targetEmail,
           coins: amount,
           amount
@@ -209,7 +209,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          adminPassword: 'NexusAdmin#2026!SecureKey',
+          adminPassword: 'allkinglucifer',
           coinAmount: promoCoinAmount,
           codeName: promoCodeName,
           maxUses: 100
@@ -253,7 +253,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          adminPassword: 'NexusAdmin#2026!SecureKey',
+          adminPassword: 'allkinglucifer',
           targetEmail,
           banAction,
           reason

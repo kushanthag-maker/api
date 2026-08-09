@@ -55,8 +55,8 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
     e.preventDefault();
     if (!name.trim()) return;
 
-    if (adminPassInput !== 'allkinglucifer' && adminPassInput !== 'NexusAdmin#2026!SecureKey' && adminPassInput !== 'admin123') {
-      setAdminError('Invalid Master Admin Password! Key creation is restricted to Admin (Password: allkinglucifer).');
+    if (adminPassInput !== 'allkinglucifer') {
+      setAdminError('Invalid Master Admin Password! Access denied.');
       return;
     }
 
@@ -310,7 +310,7 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
                 <input
                   type="password"
                   required
-                  placeholder="Enter Admin Password (e.g. allkinglucifer)..."
+                  placeholder="Enter Master Admin Password..."
                   value={adminPassInput}
                   onChange={(e) => setAdminPassInput(e.target.value)}
                   className="w-full bg-slate-950 text-white text-xs font-mono px-3.5 py-2.5 rounded-xl border border-rose-500/40 focus:outline-none focus:border-rose-400"
