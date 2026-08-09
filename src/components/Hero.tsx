@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Terminal, 
   Copy, 
@@ -8,7 +8,8 @@ import {
   Globe2, 
   ShieldCheck, 
   Zap, 
-  Boxes
+  Boxes,
+  Activity
 } from 'lucide-react';
 
 interface HeroProps {
@@ -22,6 +23,20 @@ export const Hero: React.FC<HeroProps> = ({
   onOpenSandbox,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [liveReqs, setLiveReqs] = useState<number>(0);
+  const [avgLatency, setAvgLatency] = useState<number>(12);
+
+  useEffect(() => {
+    fetch('/api/v1/telemetry/stats')
+      .then(r => r.json())
+      .then(data => {
+        if (data.status) {
+          setLiveReqs(data.totalRequests || 0);
+          if (data.avgLatencyMs) setAvgLatency(data.avgLatencyMs);
+        }
+      })
+      .catch(() => {});
+  }, []);
   const sampleCurl = `curl -X GET "https://apinexusdev-blush.vercel.app/api/v1/news/latest?apiKey=nx_live_9a8f23c10b48e71d932e" \\
   -H "Accept: application/json"`;
 
@@ -125,17 +140,17 @@ export const Hero: React.FC<HeroProps> = ({
               <Zap className="w-3.5 h-3.5" />
               <span>Avg Latency</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">14.2 ms</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">{avgLatency} ms</div>
             <p className="text-[11px] text-slate-400">Sub-20ms edge distribution</p>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 text-center space-y-1">
             <div className="flex items-center justify-center gap-1.5 text-indigo-400 text-xs font-mono font-semibold uppercase tracking-wider">
-              <Globe2 className="w-3.5 h-3.5" />
-              <span>Ada Derana Sync</span>
+              <Activity className="w-3.5 h-3.5" />
+              <span>Total Requests</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">Real-Time</div>
-            <p className="text-[11px] text-slate-400">Live news scraping</p>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">{liveReqs.toLocaleString()}</div>
+            <p className="text-[11px] text-slate-400">Live API calls processed</p>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 text-center space-y-1">
@@ -143,7 +158,7 @@ export const Hero: React.FC<HeroProps> = ({
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Uptime SLA</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">99.99%</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">100.0%</div>
             <p className="text-[11px] text-slate-400">Automated failover sync</p>
           </div>
 

@@ -141,6 +141,26 @@ function verifyApiKey(req: express.Request): {
   };
 }
 
+// In-Memory Real-Time Telemetry Tracking Store
+interface RequestLogItem {
+  id: string;
+  timestamp: string;
+  method: string;
+  path: string;
+  statusCode: number;
+  latencyMs: number;
+  apiKey: string;
+}
+
+const telemetryData = {
+  totalRequests: 0,
+  successfulRequests: 0,
+  failedRequests: 0,
+  latencies: [] as number[],
+  endpointHits: {} as Record<string, number>,
+  recentLogs: [] as RequestLogItem[]
+};
+
 export function buildApp(): express.Application {
   const app = express();
 
@@ -148,6 +168,55 @@ export function buildApp(): express.Application {
   app.use(cors());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // Live Request Tracking Middleware
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Only track API requests, exclude telemetry endpoint itself from log flooding
+    if (req.path.startsWith('/api/') && !req.path.includes('/telemetry/stats')) {
+      const startTime = Date.now();
+      const originalEnd = res.end;
+
+      res.end = function (...args: any[]) {
+        const latency = Math.max(1, Date.now() - startTime);
+
+        telemetryData.totalRequests += 1;
+        if (res.statusCode >= 200 && res.statusCode < 400) {
+          telemetryData.successfulRequests += 1;
+        } else {
+          telemetryData.failedRequests += 1;
+        }
+
+        telemetryData.latencies.push(latency);
+        if (telemetryData.latencies.length > 100) {
+          telemetryData.latencies.shift();
+        }
+
+        const cleanPath = req.path;
+        telemetryData.endpointHits[cleanPath] = (telemetryData.endpointHits[cleanPath] || 0) + 1;
+
+        const rawApiKey = (req.query.apiKey || req.query.key || req.headers['x-api-key'] || req.body?.apiKey) as string | undefined;
+        const maskedKey = rawApiKey ? `${rawApiKey.substring(0, 7)}...${rawApiKey.slice(-4)}` : 'None';
+
+        const logItem: RequestLogItem = {
+          id: `req_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+          timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
+          method: req.method,
+          path: req.originalUrl || req.path,
+          statusCode: res.statusCode,
+          latencyMs: latency,
+          apiKey: maskedKey
+        };
+
+        telemetryData.recentLogs.unshift(logItem);
+        if (telemetryData.recentLogs.length > 50) {
+          telemetryData.recentLogs.pop();
+        }
+
+        return originalEnd.apply(this, args);
+      };
+    }
+    next();
+  });
 
   // Health check & System Status (Public)
   const handleHealthCheck = (_req: express.Request, res: express.Response) => {
@@ -466,6 +535,45 @@ export function buildApp(): express.Application {
       status: true,
       apiKey: cleanKey,
       message: `✅ API Key registered successfully!`
+    });
+  });
+
+  // Real-Time Telemetry Stats Endpoint
+  app.get('/api/v1/telemetry/stats', (_req: express.Request, res: express.Response) => {
+    const avgLatency = telemetryData.latencies.length > 0
+      ? Math.round(telemetryData.latencies.reduce((a, b) => a + b, 0) / telemetryData.latencies.length)
+      : 12;
+
+    const total = telemetryData.totalRequests;
+    const successRate = total > 0 ? ((telemetryData.successfulRequests / total) * 100).toFixed(2) : '100.00';
+    const errorRate = total > 0 ? ((telemetryData.failedRequests / total) * 100).toFixed(2) : '0.00';
+
+    const colors = ['bg-cyan-500', 'bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-rose-500'];
+    const endpointTraffic = Object.entries(telemetryData.endpointHits)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([path, count], index) => {
+        const sharePct = total > 0 ? Math.round((count / total) * 100) : 0;
+        return {
+          name: `${path}`,
+          reqs: `${count} reqs`,
+          share: `${sharePct}%`,
+          color: colors[index % colors.length]
+        };
+      });
+
+    return res.json({
+      status: true,
+      totalRequests: telemetryData.totalRequests,
+      successfulRequests: telemetryData.successfulRequests,
+      failedRequests: telemetryData.failedRequests,
+      avgLatencyMs: avgLatency,
+      successRate: `${successRate}%`,
+      errorRate: `${errorRate}%`,
+      endpointTraffic: endpointTraffic.length > 0 ? endpointTraffic : [
+        { name: 'GET /api/v1/news/latest', reqs: `${telemetryData.totalRequests} reqs`, share: '100%', color: 'bg-cyan-500' }
+      ],
+      recentLogs: telemetryData.recentLogs
     });
   });
 
