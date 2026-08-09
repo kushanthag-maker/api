@@ -56,7 +56,7 @@ export const NewsExplorer: React.FC = () => {
     setError(null);
     try {
       const queryParam = query && query.trim() ? `&q=${encodeURIComponent(query.trim())}` : '';
-      const response = await fetch(`/api/v1/news/latest?category=${cat}${queryParam}`);
+      const response = await fetch(`/api/v1/news/latest?apiKey=nx_live_9a8f23c10b48e71d932e&category=${cat}${queryParam}`);
       const data = await response.json();
       
       if (data.status && Array.isArray(data.results)) {
@@ -90,7 +90,7 @@ export const NewsExplorer: React.FC = () => {
       const response = await fetch('/api/v1/news/detail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ url, apiKey: 'nx_live_9a8f23c10b48e71d932e' })
       });
       const data = await response.json();
 
@@ -106,7 +106,7 @@ export const NewsExplorer: React.FC = () => {
     }
   };
 
-  const currentApiUrl = `${window.location.origin}/api/v1/news/latest?category=${category}`;
+  const currentApiUrl = `${window.location.origin}/api/v1/news/latest?apiKey=nx_live_9a8f23c10b48e71d932e&category=${category}`;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">

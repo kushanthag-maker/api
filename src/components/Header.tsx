@@ -70,13 +70,13 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-bold tracking-tight text-white font-mono">
-                  NEXUS<span className="text-cyan-400">.NEWS</span>
+                  NEXUS<span className="text-cyan-400">.API</span>
                 </span>
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
                   v2.0
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 hidden sm:block">Sri Lanka News Scraper API Gateway</p>
+              <p className="text-[10px] text-slate-400 hidden sm:block">Unified Developer API Gateway</p>
             </div>
           </div>
 

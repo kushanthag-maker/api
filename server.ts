@@ -104,7 +104,7 @@ function verifyApiKey(req: express.Request): {
         payload: {
           status: false,
           error: 'UNAUTHORIZED_API_KEY',
-          message: 'Valid API Key is required. Please pass key in query parameter (?apiKey=YOUR_KEY or ?key=YOUR_KEY) or x-api-key header.'
+          message: 'Valid Nexus API Key is required. Please pass key in query parameter (?apiKey=YOUR_KEY or ?key=YOUR_KEY) or x-api-key header.'
         }
       }
     };
@@ -122,9 +122,27 @@ function verifyApiKey(req: express.Request): {
     }
   }
 
-  if (!found) {
+  // Allow dynamically created keys if they follow the official nx_live_ or nx_test_ format with sufficient length
+  if (!found && (key.startsWith('nx_live_') || key.startsWith('nx_test_')) && key.length >= 15) {
     userEmail = 'kushanthag@gmail.com';
     userApiKeysStore[userEmail] = key;
+    found = true;
+  }
+
+  if (!found) {
+    return {
+      allowed: false,
+      userEmail: 'anonymous',
+      apiKey: key,
+      errorResponse: {
+        statusCode: 401,
+        payload: {
+          status: false,
+          error: 'INVALID_API_KEY',
+          message: 'The provided Nexus API Key is invalid or has been revoked. Please provide a valid Nexus API Key.'
+        }
+      }
+    };
   }
 
   return {
@@ -148,7 +166,7 @@ export function buildApp(): express.Application {
       status: 'ok',
       online: true,
       uptime: process.uptime(),
-      gateway: 'Nexus News Edge Gateway',
+      gateway: 'Nexus API Edge Gateway',
       timestamp: new Date().toISOString(),
       services: {
         news_scraper: 'online',
