@@ -48,7 +48,7 @@ interface RequestHistoryItem {
 export const Playground: React.FC<PlaygroundProps> = ({ activeKeys }) => {
   const hostBase = typeof window !== 'undefined' ? window.location.origin : 'https://apinexusdev-blush.vercel.app';
   const [selectedKey, setSelectedKey] = useState<string>(
-    activeKeys.length > 0 ? activeKeys[0].key : 'nx_live_demo_982a3'
+    activeKeys.length > 0 ? activeKeys[0].key : ''
   );
   const [method, setMethod] = useState<HttpMethod>('GET');
   const [url, setUrl] = useState<string>(`${hostBase}/api/v1/news/latest?apiKey=${selectedKey}`);

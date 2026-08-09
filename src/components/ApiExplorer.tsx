@@ -64,7 +64,7 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
   });
 
   const [selectedApiKey, setSelectedApiKey] = useState<string>(
-    activeKeys.length > 0 ? activeKeys[0].key : 'nx_live_demo_982a3'
+    activeKeys.length > 0 ? activeKeys[0].key : ''
   );
 
   // Response execution state

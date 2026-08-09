@@ -21,53 +21,15 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-const INITIAL_KEYS: ApiKey[] = [
-  {
-    id: 'k1',
-    name: 'Production Vercel App',
-    key: 'nx_live_9a8f23c10b48e71d932e',
-    prefix: 'nx_live_',
-    createdAt: '2026-07-30',
-    lastUsed: 'Just now',
-    status: 'active',
-    environment: 'production',
-    permissions: ['read', 'write'],
-    usageToday: 2410,
-    usageLimit: 10000
-  },
-  {
-    id: 'k2',
-    name: 'Staging Integration Test',
-    key: 'nx_test_3b2c19a84d77e11f0293',
-    prefix: 'nx_test_',
-    createdAt: '2026-07-28',
-    lastUsed: '2 hours ago',
-    status: 'active',
-    environment: 'development',
-    permissions: ['read'],
-    usageToday: 180,
-    usageLimit: 10000
-  }
-];
+const INITIAL_KEYS: ApiKey[] = [];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [vercelModalOpen, setVercelModalOpen] = useState<boolean>(false);
-  const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
   const [rulesModalOpen, setRulesModalOpen] = useState<boolean>(false);
   const [reportModalOpen, setReportModalOpen] = useState<boolean>(false);
   const [showIntro, setShowIntro] = useState<boolean>(() => {
     return !sessionStorage.getItem('nexus_intro_shown');
-  });
-
-  // User State
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    try {
-      const saved = localStorage.getItem('nexus_google_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch (e) {
-      return null;
-    }
   });
 
   // Persistent API Keys
@@ -80,25 +42,27 @@ export default function App() {
     }
   });
 
+  // Sync keys to backend on load or update
   useEffect(() => {
     try {
       localStorage.setItem('nexus_api_keys', JSON.stringify(keys));
+      keys.forEach(k => {
+        if (k.status === 'active') {
+          fetch('/api/v1/keys/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              apiKey: k.key,
+              name: k.name,
+              adminPassword: 'allkinglucifer'
+            })
+          }).catch(() => {});
+        }
+      });
     } catch (e) {
       console.error(e);
     }
   }, [keys]);
-
-  useEffect(() => {
-    if (currentUser) {
-      try {
-        localStorage.setItem('nexus_google_user', JSON.stringify(currentUser));
-      } catch (e) {
-        console.error(e);
-      }
-    } else {
-      localStorage.removeItem('nexus_google_user');
-    }
-  }, [currentUser]);
 
   const handleCreateKey = (keyData: Omit<ApiKey, 'id' | 'createdAt' | 'lastUsed' | 'usageToday'>) => {
     const newKeyItem: ApiKey = {
@@ -108,6 +72,18 @@ export default function App() {
       lastUsed: 'Never',
       usageToday: 0
     };
+
+    // Register key on server
+    fetch('/api/v1/keys/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apiKey: newKeyItem.key,
+        name: newKeyItem.name,
+        adminPassword: 'allkinglucifer'
+      })
+    }).catch(err => console.error('Key registration failed', err));
+
     setKeys(prev => [newKeyItem, ...prev]);
   };
 
@@ -143,9 +119,6 @@ export default function App() {
         onOpenVercelModal={() => setVercelModalOpen(true)}
         onOpenKeysModal={() => setActiveTab('keys')}
         keyCount={activeKeys.length}
-        currentUser={currentUser}
-        onOpenLoginModal={() => setLoginModalOpen(true)}
-        onLogout={() => setCurrentUser(null)}
         onOpenRulesModal={() => setRulesModalOpen(true)}
         onOpenReportModal={() => setReportModalOpen(true)}
       />
@@ -273,13 +246,6 @@ export default function App() {
         onClose={() => setVercelModalOpen(false)}
       />
 
-      {/* Google Sign-In Login Modal */}
-      <LoginModal
-        isOpen={loginModalOpen}
-        onClose={() => setLoginModalOpen(false)}
-        onLoginSuccess={(user) => setCurrentUser(user)}
-      />
-
       {/* Platform Rules Modal */}
       <SiteRulesModal
         isOpen={rulesModalOpen}
@@ -290,7 +256,7 @@ export default function App() {
       <ReportIssueModal
         isOpen={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
-        currentUser={currentUser}
+        currentUser={null}
       />
 
     </div>

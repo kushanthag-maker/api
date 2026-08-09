@@ -77,14 +77,10 @@ function extractApiKey(req: express.Request): string | null {
   return null;
 }
 
-// In-Memory API Keys Store
-const userApiKeysStore: Record<string, string> = {
-  'kushanthag@gmail.com': 'nx_live_9a8f23c10b48e71d932e',
-  'dev.user@gmail.com': 'nx_test_3b2c19a84d77e11f0293',
-  'default': 'nx_live_9a8f23c10b48e71d932e'
-};
+// In-Memory API Keys Store (Populated via Admin panel or Key Manager with Admin authorization)
+const userApiKeysStore: Record<string, string> = {};
 
-// Strict API Key Verification Helper (No coins deducted)
+// Strict API Key Verification Helper (No demo keys allowed, only Admin-registered keys)
 function verifyApiKey(req: express.Request): {
   allowed: boolean;
   userEmail: string;
@@ -111,7 +107,7 @@ function verifyApiKey(req: express.Request): {
   }
 
   const key = rawApiKey.trim();
-  let userEmail = 'kushanthag@gmail.com';
+  let userEmail = 'admin@nexus.api';
   let found = false;
 
   for (const [email, userKey] of Object.entries(userApiKeysStore)) {
@@ -120,13 +116,6 @@ function verifyApiKey(req: express.Request): {
       found = true;
       break;
     }
-  }
-
-  // Allow dynamically created keys if they follow the official nx_live_ or nx_test_ format with sufficient length
-  if (!found && (key.startsWith('nx_live_') || key.startsWith('nx_test_')) && key.length >= 15) {
-    userEmail = 'kushanthag@gmail.com';
-    userApiKeysStore[userEmail] = key;
-    found = true;
   }
 
   if (!found) {
@@ -139,7 +128,7 @@ function verifyApiKey(req: express.Request): {
         payload: {
           status: false,
           error: 'INVALID_API_KEY',
-          message: 'The provided Nexus API Key is invalid or has been revoked. Please provide a valid Nexus API Key.'
+          message: 'The provided Nexus API Key is invalid or has not been issued by Admin. Please generate a valid API Key from the Admin Panel or Key Manager.'
         }
       }
     };
@@ -458,6 +447,25 @@ export function buildApp(): express.Application {
       userEmail: cleanEmail,
       name: name || cleanEmail.split('@')[0],
       message: `✅ Official API Key generated successfully for ${cleanEmail}!`
+    });
+  });
+
+  // Register / Sync Key with Admin authorization
+  app.post('/api/v1/keys/register', (req: express.Request, res: express.Response) => {
+    const { apiKey, name, email, adminPassword } = req.body || {};
+    if (adminPassword !== 'allkinglucifer') {
+      return res.status(401).json({ status: false, message: 'Invalid Admin Password.' });
+    }
+    if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 8) {
+      return res.status(400).json({ status: false, message: 'Invalid API Key string provided.' });
+    }
+    const cleanKey = apiKey.trim();
+    const identifier = email ? email.trim().toLowerCase() : (name ? name.trim() : `key_${cleanKey.substring(0, 12)}`);
+    userApiKeysStore[identifier] = cleanKey;
+    return res.json({
+      status: true,
+      apiKey: cleanKey,
+      message: `✅ API Key registered successfully!`
     });
   });
 

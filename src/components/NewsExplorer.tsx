@@ -28,10 +28,26 @@ interface NewsItem {
 }
 
 export const NewsExplorer: React.FC = () => {
+  const [apiKey, setApiKey] = useState<string>(() => {
+    const savedKey = localStorage.getItem('nexus_news_api_key');
+    if (savedKey) return savedKey;
+    try {
+      const keysStr = localStorage.getItem('nexus_api_keys');
+      if (keysStr) {
+        const keysList = JSON.parse(keysStr);
+        if (Array.isArray(keysList) && keysList.length > 0) {
+          const active = keysList.find((k: any) => k.status === 'active');
+          if (active) return active.key;
+        }
+      }
+    } catch (e) {}
+    return '';
+  });
+
   const [category, setCategory] = useState<string>('latest');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // Article Detail Modal state
@@ -42,6 +58,12 @@ export const NewsExplorer: React.FC = () => {
   const [copiedUrl, setCopiedUrl] = useState<boolean>(false);
   const [copiedJson, setCopiedJson] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem('nexus_news_api_key', apiKey.trim());
+    }
+  }, [apiKey]);
+
   const categories = [
     { id: 'latest', label: 'Latest News', icon: Newspaper },
     { id: 'hot', label: 'Hot / Top News', icon: Flame },
@@ -51,18 +73,25 @@ export const NewsExplorer: React.FC = () => {
     { id: 'entertainment', label: 'Entertainment', icon: Tv },
   ];
 
-  const fetchNews = async (cat: string, query?: string) => {
+  const fetchNews = async (cat: string, query?: string, currentKey?: string) => {
+    const activeKey = (currentKey || apiKey).trim();
+    if (!activeKey) {
+      setError('Please provide a valid Nexus API Key (generated via Admin Panel or Key Manager).');
+      setNewsList([]);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
       const queryParam = query && query.trim() ? `&q=${encodeURIComponent(query.trim())}` : '';
-      const response = await fetch(`/api/v1/news/latest?apiKey=nx_live_9a8f23c10b48e71d932e&category=${cat}${queryParam}`);
+      const response = await fetch(`/api/v1/news/latest?apiKey=${encodeURIComponent(activeKey)}&category=${cat}${queryParam}`);
       const data = await response.json();
       
       if (data.status && Array.isArray(data.results)) {
         setNewsList(data.results);
       } else {
-        setError(data.message || 'Failed to fetch news updates.');
+        setError(data.message || data.error || 'Failed to fetch news updates with provided API Key.');
       }
     } catch (err: any) {
       setError(err?.message || 'Network error fetching news.');
@@ -72,8 +101,10 @@ export const NewsExplorer: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchNews(category, searchQuery);
-  }, [category]);
+    if (apiKey.trim()) {
+      fetchNews(category, searchQuery);
+    }
+  }, [category, apiKey]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,11 +117,18 @@ export const NewsExplorer: React.FC = () => {
     setArticleData(null);
     setArticleError(null);
 
+    const activeKey = apiKey.trim();
+    if (!activeKey) {
+      setArticleError('API Key is required to fetch article details.');
+      setArticleLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/v1/news/detail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, apiKey: 'nx_live_9a8f23c10b48e71d932e' })
+        body: JSON.stringify({ url, apiKey: activeKey })
       });
       const data = await response.json();
 
@@ -106,7 +144,7 @@ export const NewsExplorer: React.FC = () => {
     }
   };
 
-  const currentApiUrl = `${window.location.origin}/api/v1/news/latest?apiKey=nx_live_9a8f23c10b48e71d932e&category=${category}`;
+  const currentApiUrl = `${window.location.origin}/api/v1/news/latest?apiKey=${apiKey || 'YOUR_NEXUS_API_KEY'}&category=${category}`;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -128,8 +166,31 @@ export const NewsExplorer: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800 shrink-0 text-xs font-mono">
-            <Coins className="w-4 h-4 text-amber-400" />
-            <span className="text-slate-300">Cost: <strong className="text-amber-300">2 Coins</strong> / Request</span>
+            <Key className="w-4 h-4 text-cyan-400" />
+            <span className="text-slate-300">Auth: <strong className="text-cyan-300">API Key Required</strong></span>
+          </div>
+        </div>
+
+        {/* Active API Key Input Bar */}
+        <div className="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-slate-300 font-mono shrink-0">
+            <Key className="w-4 h-4 text-cyan-400" />
+            <span className="font-bold text-slate-200">Your API Key:</span>
+          </div>
+          <div className="flex-1 flex items-center gap-2">
+            <input
+              type="text"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Enter your Admin-issued Nexus API Key (e.g. nx_live_...)"
+              className="w-full bg-slate-900 border border-slate-700 focus:border-cyan-500 rounded-lg px-3 py-1.5 text-xs text-white font-mono outline-none"
+            />
+            <button
+              onClick={() => fetchNews(category, searchQuery)}
+              className="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shrink-0 cursor-pointer"
+            >
+              Apply Key
+            </button>
           </div>
         </div>
 

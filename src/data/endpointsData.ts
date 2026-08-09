@@ -11,12 +11,12 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
     description: 'Scrapes real-time headlines, relative timestamps, lead thumbnails, and direct article URLs directly from Sinhala Ada Derana (sinhala.adaderana.lk). Requires a valid API Key.',
     rateLimit: '100 req/min',
     params: [
-      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus API Key (or x-api-key header).', location: 'query', default: 'nx_live_9a8f23c10b48e71d932e' },
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus API Key (or x-api-key header).', location: 'query', default: 'YOUR_NEXUS_API_KEY' },
       { name: 'category', type: 'string', required: false, description: 'Category: latest, hot, sports, world, business, or entertainment.', location: 'query', default: 'latest' },
       { name: 'q', type: 'string', required: false, description: 'Optional search keyword filter.', location: 'query', default: '' }
     ],
     sampleRequestBody: {
-      apiKey: 'nx_live_9a8f23c10b48e71d932e',
+      apiKey: 'YOUR_NEXUS_API_KEY',
       category: 'latest'
     },
     sampleResponseBody: {
@@ -47,11 +47,11 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
     description: 'Scrapes full news article body text, lead image banner, publication timestamp, and source URL for any specific Ada Derana article link. Requires a valid API Key.',
     rateLimit: '100 req/min',
     params: [
-      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus API Key (or x-api-key header).', location: 'query', default: 'nx_live_9a8f23c10b48e71d932e' },
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus API Key (or x-api-key header).', location: 'query', default: 'YOUR_NEXUS_API_KEY' },
       { name: 'url', type: 'string', required: true, description: 'Full Ada Derana article URL (e.g. https://sinhala.adaderana.lk/news_official.php?nid=192834).', location: 'query', default: 'https://sinhala.adaderana.lk/news_official.php?nid=192834' }
     ],
     sampleRequestBody: {
-      apiKey: 'nx_live_9a8f23c10b48e71d932e',
+      apiKey: 'YOUR_NEXUS_API_KEY',
       url: 'https://sinhala.adaderana.lk/news_official.php?nid=192834'
     },
     sampleResponseBody: {
