@@ -617,7 +617,7 @@ export function buildApp(): express.Application {
     if (!rawInput || !rawInput.trim()) {
       return res.status(400).json({
         status: "error",
-        message: 'කරුණාකර Instagram Username එකක් ලබාදෙන්න! (?username=cristiano or /search?username=...)'
+        message: "Username eka denna"
       });
     }
 
@@ -634,7 +634,7 @@ export function buildApp(): express.Application {
     if (!cleanUsername) {
       return res.status(400).json({
         status: "error",
-        message: 'වළංගු නැති Instagram Username එකකි.'
+        message: "Username eka denna"
       });
     }
 
@@ -726,7 +726,7 @@ export function buildApp(): express.Application {
     if (!link || !link.trim()) {
       return res.status(400).json({
         status: "error",
-        message: "URL eka denna (?url=https://www.instagram.com/p/...)"
+        message: "URL eka denna"
       });
     }
 
