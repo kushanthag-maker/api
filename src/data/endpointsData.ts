@@ -67,6 +67,64 @@ export const NEXUS_ENDPOINTS: ApiEndpoint[] = [
       full_news: 'මහනුවර ප්‍රධාන මාර්ගයේ පවතින නඩත්තු කටයුතු හේතුවෙන් අධික රථවාහන තදබදයක් හටගෙන ඇති බව පොලීසිය පවසයි...',
       article_content: 'මහනුවර ප්‍රධාන මාර්ගයේ පවතින නඩත්තු කටයුතු හේතුවෙන් අධික රථවාහන තදබදයක් හටගෙන ඇති බව පොලීසිය පවසයි...'
     }
+  },
+  {
+    id: 'instagram-stalk-search',
+    name: 'Instagram Profile Stalker & Search API',
+    category: 'instagram',
+    method: 'GET',
+    path: '/api/v1/instagram/stalk',
+    summary: 'Search & stalk Instagram user profiles, follower count, biography, and profile picture.',
+    description: 'Scrapes Instagram profile metadata including full name, follower count, following count, total post count, HD profile picture URL, and biography details.',
+    rateLimit: '60 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus API Key (or x-api-key header).', location: 'query', default: 'YOUR_NEXUS_API_KEY' },
+      { name: 'username', type: 'string', required: true, description: 'Target Instagram username (e.g. cristiano, instagram, etc.).', location: 'query', default: 'cristiano' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'YOUR_NEXUS_API_KEY',
+      username: 'cristiano'
+    },
+    sampleResponseBody: {
+      status: 'success',
+      username: 'cristiano',
+      full_name: 'Cristiano Ronaldo',
+      followers: '640M',
+      following: '580',
+      posts_count: '3,750',
+      biography: 'Cristiano Ronaldo Official Instagram Profile',
+      profile_pic: 'https://api.dicebear.com/7.x/identicon/svg?seed=cristiano',
+      profile_url: 'https://www.instagram.com/cristiano/',
+      is_private: false,
+      is_verified: true
+    }
+  },
+  {
+    id: 'instagram-media-downloader',
+    name: 'Instagram Media & Reels Downloader API',
+    category: 'instagram',
+    method: 'GET',
+    path: '/api/v1/instagram/download',
+    summary: 'Extract high-speed direct video & image download URLs from Instagram posts, Reels, and IGTV.',
+    description: 'Parses Instagram shortcodes from post or reel links and returns direct downloadable CDN media URLs along with original captions and thumbnails.',
+    rateLimit: '60 req/min',
+    params: [
+      { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus API Key (or x-api-key header).', location: 'query', default: 'YOUR_NEXUS_API_KEY' },
+      { name: 'url', type: 'string', required: true, description: 'Full Instagram Post or Reel URL.', location: 'query', default: 'https://www.instagram.com/reel/C3x9L9vI1AB/' }
+    ],
+    sampleRequestBody: {
+      apiKey: 'YOUR_NEXUS_API_KEY',
+      url: 'https://www.instagram.com/reel/C3x9L9vI1AB/'
+    },
+    sampleResponseBody: {
+      status: 'success',
+      shortcode: 'C3x9L9vI1AB',
+      type: 'video',
+      download_url: 'https://instagram.fcol1-1.fna.fbcdn.net/v/t51.2885-15/...',
+      thumbnail: 'https://instagram.fcol1-1.fna.fbcdn.net/v/t51.2885-15/...',
+      caption: 'Unforgettable moments on the pitch 🔥',
+      original_url: 'https://www.instagram.com/p/C3x9L9vI1AB/'
+    }
   }
 ];
 

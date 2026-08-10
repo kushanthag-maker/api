@@ -11,6 +11,7 @@ import { LoginModal } from './components/LoginModal';
 import { SiteRulesModal } from './components/SiteRulesModal';
 import { AdminPanel } from './components/AdminPanel';
 import { NewsExplorer } from './components/NewsExplorer';
+import { InstagramExplorer } from './components/InstagramExplorer';
 import { ReportIssueModal } from './components/ReportIssueModal';
 import { IntroAnimation } from './components/IntroAnimation';
 import { Footer } from './components/Footer';
@@ -256,6 +257,8 @@ export default function App() {
         )}
 
         {activeTab === 'news' && <NewsExplorer />}
+
+        {activeTab === 'instagram' && <InstagramExplorer />}
 
         {activeTab === 'playground' && (
           <Playground activeKeys={activeKeys} />

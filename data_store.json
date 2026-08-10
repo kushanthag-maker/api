@@ -1,5 +1,5 @@
 {
-  "globalApiRequestsCounter": 0,
+  "globalApiRequestsCounter": 4,
   "claimedFreeEmails": [],
   "claimedFreeIPs": [],
   "keys": [
@@ -16,13 +16,71 @@
         "usageLimit": 50000,
         "usageToday": 0
       }
+    ],
+    [
+      "nx_free_674c63dad40bac60",
+      {
+        "id": "key_1786394221844_277",
+        "key": "nx_free_674c63dad40bac60",
+        "name": "My Free Project",
+        "email": "user@nexus.api",
+        "createdAt": "2026-08-10",
+        "status": "active",
+        "environment": "production",
+        "usageLimit": 10,
+        "usageToday": 0
+      }
+    ],
+    [
+      "nx_free_test",
+      {
+        "id": "key_1786394583800_181",
+        "key": "nx_free_test",
+        "name": "Free User Key (10 Reqs)",
+        "email": "user@nexus.api",
+        "createdAt": "2026-08-10",
+        "status": "active",
+        "environment": "production",
+        "usageLimit": 10,
+        "usageToday": 4
+      }
     ]
   ],
   "telemetry": {
-    "totalRequests": 0,
-    "successfulRequests": 0,
+    "totalRequests": 3,
+    "successfulRequests": 3,
     "failedRequests": 0,
-    "endpointHits": {},
-    "recentLogs": []
+    "endpointHits": {
+      "/api/v1/keys/batch-status": 3
+    },
+    "recentLogs": [
+      {
+        "id": "req_1786394642523_638",
+        "timestamp": "20:44:02",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786394639523_827",
+        "timestamp": "20:43:59",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786394636547_726",
+        "timestamp": "20:43:56",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 2,
+        "apiKey": "Anonymous"
+      }
+    ]
   }
 }

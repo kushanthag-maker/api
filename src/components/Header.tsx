@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   LogOut,
   Newspaper,
+  Instagram,
   Bug,
   FileText
 } from 'lucide-react';
@@ -41,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   const navItems = [
     { id: 'overview', label: 'Overview', icon: Zap },
     { id: 'docs', label: 'API Reference', icon: BookOpen },
+    { id: 'instagram', label: 'Instagram Stalker & Downloader', icon: Instagram, badge: 'NEW' },
     { id: 'news', label: 'News API', icon: Newspaper },
     { id: 'playground', label: 'Console Sandbox', icon: Terminal },
     { id: 'keys', label: 'API Keys', icon: Key, badge: keyCount > 0 ? keyCount : undefined },

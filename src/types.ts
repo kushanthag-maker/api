@@ -1,6 +1,6 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
-export type ApiCategory = 'ai' | 'auth' | 'data' | 'utility' | 'news';
+export type ApiCategory = 'ai' | 'auth' | 'data' | 'utility' | 'news' | 'instagram';
 
 export type ApiStatus = 'online' | 'offline' | 'degraded';
 
