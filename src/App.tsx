@@ -75,20 +75,29 @@ export default function App() {
         });
         const data = await res.json();
         if (data.status && data.keysStatus) {
-          setKeys(prevKeys =>
-            prevKeys.map(k => {
+          setKeys(prevKeys => {
+            let hasChanged = false;
+            const updated = prevKeys.map(k => {
               const liveData = data.keysStatus[k.key];
               if (liveData) {
-                return {
-                  ...k,
-                  usageToday: liveData.usageToday ?? k.usageToday,
-                  usageLimit: liveData.usageLimit ?? k.usageLimit,
-                  status: liveData.status === 'revoked' ? 'revoked' : k.status
-                };
+                const newUsage = Math.max(k.usageToday || 0, liveData.usageToday ?? 0);
+                const newLimit = liveData.usageLimit ?? k.usageLimit;
+                const newStatus = liveData.status === 'revoked' ? 'revoked' : k.status;
+
+                if (newUsage !== k.usageToday || newLimit !== k.usageLimit || newStatus !== k.status) {
+                  hasChanged = true;
+                  return {
+                    ...k,
+                    usageToday: newUsage,
+                    usageLimit: newLimit,
+                    status: newStatus
+                  };
+                }
               }
               return k;
-            })
-          );
+            });
+            return hasChanged ? updated : prevKeys;
+          });
         }
       } catch (err) {
         // silent sync retry

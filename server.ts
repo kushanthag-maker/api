@@ -100,7 +100,7 @@ async function incrementGlobalRequests() {
     if (db) {
       await db.collection('stats').updateOne(
         { id: 'global_metrics' },
-        { $inc: { total_api_requests: 1 } },
+        { $setMax: { total_api_requests: globalApiRequestsCounter } },
         { upsert: true }
       );
     }
@@ -194,6 +194,7 @@ function lookupOrRegisterKey(rawKey: string): ServerApiKey | null {
       usageToday: 0
     };
     serverKeysStore.set(cleanKey, newRecord);
+    saveStoreToDisk();
     return newRecord;
   }
 
@@ -1018,14 +1019,15 @@ export function buildApp(): express.Application {
   // System Statistics Endpoint
   app.get('/api/v1/stats', async (_req: express.Request, res: express.Response) => {
     let dbReqCount = globalApiRequestsCounter;
-    let totalKeys = Object.keys(userApiKeysStore).length;
+    let totalKeys = serverKeysStore.size;
 
     try {
       const db = await getMongoDb();
       if (db) {
         const statsDoc = await db.collection('stats').findOne({ id: 'global_metrics' });
-        if (statsDoc && statsDoc.total_api_requests) {
-          dbReqCount = statsDoc.total_api_requests;
+        if (statsDoc && typeof statsDoc.total_api_requests === 'number') {
+          globalApiRequestsCounter = Math.max(globalApiRequestsCounter, statsDoc.total_api_requests);
+          dbReqCount = globalApiRequestsCounter;
         }
       }
     } catch (e) {
