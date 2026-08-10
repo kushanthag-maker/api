@@ -88,7 +88,7 @@ function loadStoreFromDisk() {
 }
 
 // Global Total Requests Counter & User Keys Map
-let globalApiRequestsCounter = 12480;
+let globalApiRequestsCounter = 0;
 const userApiKeysStore: Record<string, string> = {};
 const claimedFreeEmails = new Set<string>();
 const claimedFreeIPs = new Set<string>();

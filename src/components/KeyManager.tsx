@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ApiKey } from '../types';
-import { maskEmail, maskApiKey } from '../lib/security';
+import { maskEmail, maskApiKey, secureGetStorage, secureSetStorage } from '../lib/security';
 import { 
   Key, 
   Plus, 
@@ -50,7 +50,7 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
   const [freeKeySuccessMsg, setFreeKeySuccessMsg] = useState<string | null>(null);
   const [freeKeyErrorMsg, setFreeKeyErrorMsg] = useState<string | null>(null);
   const [isFreeKeyLocked, setIsFreeKeyLocked] = useState<boolean>(() => {
-    return localStorage.getItem('nexus_free_key_claimed') === 'true';
+    return secureGetStorage<boolean>('nexus_free_key_claimed', false);
   });
 
   // Sync / Search State
@@ -79,7 +79,7 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
       .then(data => {
         if (data && data.isLocked) {
           setIsFreeKeyLocked(true);
-          localStorage.setItem('nexus_free_key_claimed', 'true');
+          secureSetStorage('nexus_free_key_claimed', true);
         }
       })
       .catch(() => {});
@@ -119,11 +119,11 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
           usageLimit: k.usageLimit || 10
         });
         setIsFreeKeyLocked(true);
-        localStorage.setItem('nexus_free_key_claimed', 'true');
+        secureSetStorage('nexus_free_key_claimed', true);
         setFreeKeySuccessMsg(`🎁 Free API Key '${k.key}' (10 requests) issued successfully! Free claims for this account are now permanently locked.`);
       } else {
         setIsFreeKeyLocked(true);
-        localStorage.setItem('nexus_free_key_claimed', 'true');
+        secureSetStorage('nexus_free_key_claimed', true);
         setFreeKeyErrorMsg(data.message || '🔒 Free trial key has already been claimed and is permanently locked.');
       }
     } catch (err) {

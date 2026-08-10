@@ -1,0 +1,28 @@
+{
+  "globalApiRequestsCounter": 0,
+  "claimedFreeEmails": [],
+  "claimedFreeIPs": [],
+  "keys": [
+    [
+      "nx_live_default_admin_key_2026",
+      {
+        "id": "key_default_1",
+        "key": "nx_live_default_admin_key_2026",
+        "name": "Default Admin Key",
+        "email": "admin@nexus.api",
+        "createdAt": "2026-08-10",
+        "status": "active",
+        "environment": "production",
+        "usageLimit": 50000,
+        "usageToday": 0
+      }
+    ]
+  ],
+  "telemetry": {
+    "totalRequests": 0,
+    "successfulRequests": 0,
+    "failedRequests": 0,
+    "endpointHits": {},
+    "recentLogs": []
+  }
+}

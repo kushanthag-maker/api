@@ -128,7 +128,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
 
   // Helper to get active admin session password
   const getAdminPass = (): string => {
-    return sessionStorage.getItem('nexus_admin_pass') || adminPassword || '';
+    try {
+      const raw = sessionStorage.getItem('nexus_admin_pass');
+      if (raw && raw.startsWith('nx_enc_')) {
+        return decodeURIComponent(atob(raw.substring(7)));
+      }
+      return raw || adminPassword || '';
+    } catch (e) {
+      return adminPassword || '';
+    }
   };
 
   const handleAdminGenerateKey = async (e: React.FormEvent) => {
@@ -224,7 +232,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
         setIsAuthenticated(true);
         setFailedAttempts(0);
         sessionStorage.setItem('nexus_admin_authed', 'true');
-        sessionStorage.setItem('nexus_admin_pass', adminPassword);
+        sessionStorage.setItem('nexus_admin_pass', `nx_enc_${btoa(encodeURIComponent(adminPassword))}`);
         addAuditLog('Admin Vault Authenticated Successfully', 'Admin Root', 'INFO');
         fetchAdminData();
       } else {

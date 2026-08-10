@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { secureGetStorage } from '../lib/security';
+import { secureGetStorage, secureSetStorage } from '../lib/security';
 import { 
   Newspaper, 
   Search, 
@@ -31,7 +31,7 @@ interface NewsItem {
 
 export const NewsExplorer: React.FC = () => {
   const [apiKey, setApiKey] = useState<string>(() => {
-    const savedKey = localStorage.getItem('nexus_news_api_key');
+    const savedKey = secureGetStorage<string>('nexus_news_api_key', '');
     if (savedKey) return savedKey;
     try {
       const keysList = secureGetStorage<any[]>('nexus_api_keys', []);
@@ -59,7 +59,7 @@ export const NewsExplorer: React.FC = () => {
 
   useEffect(() => {
     if (apiKey) {
-      localStorage.setItem('nexus_news_api_key', apiKey.trim());
+      secureSetStorage('nexus_news_api_key', apiKey.trim());
     }
   }, [apiKey]);
 
