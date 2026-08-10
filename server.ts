@@ -1,10 +1,13 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import cors from 'cors';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { MongoClient, Db } from 'mongodb';
+
+const STORE_FILE_PATH = path.join(process.cwd(), 'data_store.json');
 
 const MONGO_URI = 'mongodb+srv://heshancamika_db_user:XM8EiSj9zHJLeMuG@cluster0.nimdgb1.mongodb.net/?appName=Cluster0';
 let mongoClient: MongoClient | null = null;
@@ -28,6 +31,62 @@ async function getMongoDb(): Promise<Db | null> {
   }
 }
 
+// Save state to disk to preserve request counts and keys permanently across server updates/restarts
+function saveStoreToDisk() {
+  try {
+    const keysArray = Array.from(serverKeysStore.entries());
+    const dataToSave = {
+      globalApiRequestsCounter,
+      claimedFreeEmails: Array.from(claimedFreeEmails),
+      claimedFreeIPs: Array.from(claimedFreeIPs),
+      keys: keysArray,
+      telemetry: {
+        totalRequests: telemetryData.totalRequests,
+        successfulRequests: telemetryData.successfulRequests,
+        failedRequests: telemetryData.failedRequests,
+        endpointHits: telemetryData.endpointHits,
+        recentLogs: telemetryData.recentLogs.slice(0, 50)
+      }
+    };
+    fs.writeFileSync(STORE_FILE_PATH, JSON.stringify(dataToSave, null, 2), 'utf8');
+  } catch (e) {
+    // silent fallback
+  }
+}
+
+function loadStoreFromDisk() {
+  try {
+    if (fs.existsSync(STORE_FILE_PATH)) {
+      const raw = fs.readFileSync(STORE_FILE_PATH, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (typeof parsed.globalApiRequestsCounter === 'number') {
+        globalApiRequestsCounter = parsed.globalApiRequestsCounter;
+      }
+      if (Array.isArray(parsed.claimedFreeEmails)) {
+        parsed.claimedFreeEmails.forEach((e: string) => claimedFreeEmails.add(e));
+      }
+      if (Array.isArray(parsed.claimedFreeIPs)) {
+        parsed.claimedFreeIPs.forEach((ip: string) => claimedFreeIPs.add(ip));
+      }
+      if (Array.isArray(parsed.keys)) {
+        parsed.keys.forEach(([kStr, kObj]: [string, ServerApiKey]) => {
+          serverKeysStore.set(kStr, kObj);
+        });
+      }
+      if (parsed.telemetry) {
+        telemetryData.totalRequests = parsed.telemetry.totalRequests || telemetryData.totalRequests;
+        telemetryData.successfulRequests = parsed.telemetry.successfulRequests || telemetryData.successfulRequests;
+        telemetryData.failedRequests = parsed.telemetry.failedRequests || telemetryData.failedRequests;
+        telemetryData.endpointHits = parsed.telemetry.endpointHits || telemetryData.endpointHits;
+        telemetryData.recentLogs = parsed.telemetry.recentLogs || telemetryData.recentLogs;
+      }
+      console.log(`💾 Restored store.json! Global Request Counter: ${globalApiRequestsCounter}, Total Keys: ${serverKeysStore.size}`);
+    }
+  } catch (e) {
+    console.warn('⚠️ Could not load store.json:', e);
+  }
+}
+
 // Global Total Requests Counter & User Keys Map
 let globalApiRequestsCounter = 12480;
 const userApiKeysStore: Record<string, string> = {};
@@ -35,6 +94,7 @@ const claimedFreeEmails = new Set<string>();
 const claimedFreeIPs = new Set<string>();
 async function incrementGlobalRequests() {
   globalApiRequestsCounter++;
+  saveStoreToDisk();
   try {
     const db = await getMongoDb();
     if (db) {
@@ -108,6 +168,9 @@ const defaultDemoKey: ServerApiKey = {
   usageToday: 0
 };
 serverKeysStore.set(defaultDemoKey.key, defaultDemoKey);
+
+// Restore store from disk if present
+loadStoreFromDisk();
 
 // Helper to find or auto-register keys
 function lookupOrRegisterKey(rawKey: string): ServerApiKey | null {
@@ -215,6 +278,7 @@ function verifyApiKey(req: express.Request): {
 
   // Increment usage count for valid request
   keyRecord.usageToday += 1;
+  saveStoreToDisk();
 
   return {
     allowed: true,
@@ -628,11 +692,54 @@ export function buildApp(): express.Application {
     if (clientIp && clientIp !== '127.0.0.1' && clientIp !== '::1') claimedFreeIPs.add(clientIp);
 
     serverKeysStore.set(freeKeyString, freeKeyRecord);
+    saveStoreToDisk();
 
     return res.json({
       status: true,
       apiKey: freeKeyRecord,
       message: '🎁 Free API Key generated successfully! (Limit: 10 requests). Free claims for this account are now permanently locked.'
+    });
+  });
+
+  // Batch Query Key Usage Status & Request Volume (Public for Client UI Real-Time Quota Updates)
+  app.post('/api/v1/keys/batch-status', (req: express.Request, res: express.Response) => {
+    const { keys: keyStrings, email } = req.body || {};
+    const keysStatusMap: Record<string, { usageToday: number; usageLimit: number; status: string; name: string; email: string }> = {};
+
+    let candidateKeys: ServerApiKey[] = [];
+    if (Array.isArray(keyStrings) && keyStrings.length > 0) {
+      keyStrings.forEach((kStr: string) => {
+        if (typeof kStr === 'string' && kStr.trim()) {
+          const found = lookupOrRegisterKey(kStr);
+          if (found) candidateKeys.push(found);
+        }
+      });
+    }
+
+    if (email && typeof email === 'string' && email.trim()) {
+      const cleanEmail = email.trim().toLowerCase();
+      Array.from(serverKeysStore.values()).forEach(k => {
+        if (k.email.toLowerCase() === cleanEmail && !candidateKeys.some(ck => ck.key === k.key)) {
+          candidateKeys.push(k);
+        }
+      });
+    }
+
+    candidateKeys.forEach(k => {
+      keysStatusMap[k.key] = {
+        usageToday: k.usageToday || 0,
+        usageLimit: k.usageLimit || 10,
+        status: k.status,
+        name: k.name,
+        email: k.email
+      };
+    });
+
+    return res.json({
+      status: true,
+      globalTotalRequests: globalApiRequestsCounter,
+      keysStatus: keysStatusMap,
+      totalActiveKeys: serverKeysStore.size
     });
   });
 
@@ -684,6 +791,7 @@ export function buildApp(): express.Application {
     };
 
     serverKeysStore.set(cleanKey, newRecord);
+    saveStoreToDisk();
     return res.json({ status: true, apiKey: newRecord, message: 'Key synced to server.' });
   });
 
@@ -709,6 +817,7 @@ export function buildApp(): express.Application {
 
     const record = serverKeysStore.get(key)!;
     record.usageLimit = Math.max(1, parseInt(newLimit, 10) || 10000);
+    saveStoreToDisk();
     return res.json({
       status: true,
       apiKey: record,
@@ -728,6 +837,7 @@ export function buildApp(): express.Application {
 
     const record = serverKeysStore.get(key)!;
     record.status = action === 'revoke' ? 'revoked' : 'active';
+    saveStoreToDisk();
     return res.json({
       status: true,
       apiKey: record,
@@ -789,6 +899,7 @@ export function buildApp(): express.Application {
     };
 
     serverKeysStore.set(newApiKey, newRecord);
+    saveStoreToDisk();
 
     return res.json({
       status: true,
@@ -825,8 +936,8 @@ export function buildApp(): express.Application {
       ? Math.round(telemetryData.latencies.reduce((a, b) => a + b, 0) / telemetryData.latencies.length)
       : 12;
 
-    const total = telemetryData.totalRequests;
-    const successRate = total > 0 ? ((telemetryData.successfulRequests / total) * 100).toFixed(2) : '100.00';
+    const total = Math.max(globalApiRequestsCounter, telemetryData.totalRequests);
+    const successRate = total > 0 ? (((total - telemetryData.failedRequests) / total) * 100).toFixed(2) : '100.00';
     const errorRate = total > 0 ? ((telemetryData.failedRequests / total) * 100).toFixed(2) : '0.00';
 
     const colors = ['bg-cyan-500', 'bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-rose-500'];
@@ -845,14 +956,14 @@ export function buildApp(): express.Application {
 
     return res.json({
       status: true,
-      totalRequests: telemetryData.totalRequests,
-      successfulRequests: telemetryData.successfulRequests,
+      totalRequests: total,
+      successfulRequests: Math.max(0, total - telemetryData.failedRequests),
       failedRequests: telemetryData.failedRequests,
       avgLatencyMs: avgLatency,
       successRate: `${successRate}%`,
       errorRate: `${errorRate}%`,
       endpointTraffic: endpointTraffic.length > 0 ? endpointTraffic : [
-        { name: 'GET /api/v1/news/latest', reqs: `${telemetryData.totalRequests} reqs`, share: '100%', color: 'bg-cyan-500' }
+        { name: 'GET /api/v1/news/latest', reqs: `${total} reqs`, share: '100%', color: 'bg-cyan-500' }
       ],
       recentLogs: telemetryData.recentLogs
     });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ApiKey } from '../types';
+import { maskEmail, maskApiKey } from '../lib/security';
 import { 
   Key, 
   Plus, 
@@ -18,7 +19,9 @@ import {
   Gift,
   Search,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  BarChart3,
+  HardDrive
 } from 'lucide-react';
 
 interface KeyManagerProps {
@@ -262,6 +265,46 @@ export const KeyManager: React.FC<KeyManagerProps> = ({
           <Plus className="w-4 h-4" />
           <span>Create New API Key</span>
         </button>
+      </div>
+
+      {/* User API Request Volume & Persistence Overview Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+            <BarChart3 className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-xs text-slate-400 font-mono">Total API Requests Used</div>
+            <div className="text-xl font-bold text-cyan-300 font-mono">
+              {keys.reduce((sum, k) => sum + (k.usageToday || 0), 0).toLocaleString()} <span className="text-xs text-slate-400 font-normal">reqs</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <Key className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-xs text-slate-400 font-mono">Active User Keys</div>
+            <div className="text-xl font-bold text-indigo-300 font-mono">
+              {keys.filter(k => k.status === 'active').length} / {keys.length} <span className="text-xs text-slate-400 font-normal">keys</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <HardDrive className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-xs text-slate-400 font-mono">Request Counter Storage</div>
+            <div className="text-sm font-bold text-emerald-400 font-mono flex items-center gap-1 mt-0.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>Saved & Persistent</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Free 10-Request Key CTA & Admin Key Import Section */}

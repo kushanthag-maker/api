@@ -15,6 +15,7 @@ import { ReportIssueModal } from './components/ReportIssueModal';
 import { IntroAnimation } from './components/IntroAnimation';
 import { Footer } from './components/Footer';
 import { ApiKey, UserProfile } from './types';
+import { secureGetStorage, secureSetStorage } from './lib/security';
 import { 
   Zap, 
   Terminal, 
@@ -32,20 +33,15 @@ export default function App() {
     return !sessionStorage.getItem('nexus_intro_shown');
   });
 
-  // Persistent API Keys
+  // Obfuscated & Persistent API Keys Storage
   const [keys, setKeys] = useState<ApiKey[]>(() => {
-    try {
-      const saved = localStorage.getItem('nexus_api_keys');
-      return saved ? JSON.parse(saved) : INITIAL_KEYS;
-    } catch (e) {
-      return INITIAL_KEYS;
-    }
+    return secureGetStorage<ApiKey[]>('nexus_api_keys', INITIAL_KEYS);
   });
 
-  // Sync keys to backend on load or update
+  // Sync keys to backend & obfuscated local storage on change
   useEffect(() => {
     try {
-      localStorage.setItem('nexus_api_keys', JSON.stringify(keys));
+      secureSetStorage('nexus_api_keys', keys);
       keys.forEach(k => {
         if (k.status === 'active') {
           fetch('/api/v1/keys/sync', {
@@ -64,6 +60,45 @@ export default function App() {
       console.error(e);
     }
   }, [keys]);
+
+  // Real-Time Quota & Usage Counter Synchronization Effect (Polls server every 3s)
+  useEffect(() => {
+    if (keys.length === 0) return;
+
+    const pollKeyUsage = async () => {
+      try {
+        const keyStrings = keys.map(k => k.key);
+        const res = await fetch('/api/v1/keys/batch-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keys: keyStrings })
+        });
+        const data = await res.json();
+        if (data.status && data.keysStatus) {
+          setKeys(prevKeys =>
+            prevKeys.map(k => {
+              const liveData = data.keysStatus[k.key];
+              if (liveData) {
+                return {
+                  ...k,
+                  usageToday: liveData.usageToday ?? k.usageToday,
+                  usageLimit: liveData.usageLimit ?? k.usageLimit,
+                  status: liveData.status === 'revoked' ? 'revoked' : k.status
+                };
+              }
+              return k;
+            })
+          );
+        }
+      } catch (err) {
+        // silent sync retry
+      }
+    };
+
+    pollKeyUsage();
+    const interval = setInterval(pollKeyUsage, 3000);
+    return () => clearInterval(interval);
+  }, [keys.length]);
 
   const handleCreateKey = (keyData: Omit<ApiKey, 'id' | 'createdAt' | 'lastUsed' | 'usageToday'>) => {
     const newKeyItem: ApiKey = {

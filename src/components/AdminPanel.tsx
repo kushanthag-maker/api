@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { safeFetch } from '../lib/api';
+import { maskEmail, maskApiKey } from '../lib/security';
 import { 
   ShieldAlert, 
   Lock, 
@@ -611,7 +612,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
                           {user.email.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-mono text-cyan-300">{user.email}</div>
+                          <div className="font-mono text-cyan-300">
+                            {maskKeys ? maskEmail(user.email) : user.email}
+                          </div>
                           <div className="text-[10px] text-slate-400">{user.name}</div>
                         </div>
                       </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { secureGetStorage } from '../lib/security';
 import { 
   Newspaper, 
   Search, 
@@ -33,13 +34,10 @@ export const NewsExplorer: React.FC = () => {
     const savedKey = localStorage.getItem('nexus_news_api_key');
     if (savedKey) return savedKey;
     try {
-      const keysStr = localStorage.getItem('nexus_api_keys');
-      if (keysStr) {
-        const keysList = JSON.parse(keysStr);
-        if (Array.isArray(keysList) && keysList.length > 0) {
-          const active = keysList.find((k: any) => k.status === 'active');
-          if (active) return active.key;
-        }
+      const keysList = secureGetStorage<any[]>('nexus_api_keys', []);
+      if (Array.isArray(keysList) && keysList.length > 0) {
+        const active = keysList.find((k: any) => k.status === 'active');
+        if (active) return active.key;
       }
     } catch (e) {}
     return '';
