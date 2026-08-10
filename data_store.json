@@ -1,7 +1,11 @@
 {
-  "globalApiRequestsCounter": 12,
-  "claimedFreeEmails": [],
-  "claimedFreeIPs": [],
+  "globalApiRequestsCounter": 25,
+  "claimedFreeEmails": [
+    "kushanthag@gmail.com"
+  ],
+  "claimedFreeIPs": [
+    "203.189.184.131"
+  ],
   "keys": [
     [
       "nx_live_default_admin_key_2026",
@@ -14,7 +18,7 @@
         "status": "active",
         "environment": "production",
         "usageLimit": 50000,
-        "usageToday": 0
+        "usageToday": 6
       }
     ],
     [
@@ -28,7 +32,7 @@
         "status": "active",
         "environment": "production",
         "usageLimit": 10,
-        "usageToday": 2
+        "usageToday": 6
       }
     ],
     [
@@ -44,20 +48,33 @@
         "usageLimit": 10,
         "usageToday": 10
       }
+    ],
+    [
+      "nx_free_212eb3f7cbdf4fe7",
+      {
+        "id": "key_free_1786396014869",
+        "key": "nx_free_212eb3f7cbdf4fe7",
+        "name": "My Free Project",
+        "email": "kushanthag@gmail.com",
+        "createdAt": "2026-08-10",
+        "status": "active",
+        "environment": "production",
+        "usageLimit": 10,
+        "usageToday": 0
+      }
     ]
   ],
   "telemetry": {
-    "totalRequests": 8,
-    "successfulRequests": 7,
-    "failedRequests": 1,
+    "totalRequests": 18,
+    "successfulRequests": 18,
+    "failedRequests": 0,
     "endpointHits": {
-      "/api/v1/keys/batch-status": 7,
-      "/api/v1/instagram/stalk": 1
+      "/api/v1/keys/batch-status": 18
     },
     "recentLogs": [
       {
-        "id": "req_1786395100103_211",
-        "timestamp": "20:51:40",
+        "id": "req_1786396183462_569",
+        "timestamp": "21:09:43",
         "method": "POST",
         "path": "/api/v1/keys/batch-status",
         "statusCode": 200,
@@ -65,8 +82,8 @@
         "apiKey": "Anonymous"
       },
       {
-        "id": "req_1786395097102_573",
-        "timestamp": "20:51:37",
+        "id": "req_1786396180448_942",
+        "timestamp": "21:09:40",
         "method": "POST",
         "path": "/api/v1/keys/batch-status",
         "statusCode": 200,
@@ -74,8 +91,8 @@
         "apiKey": "Anonymous"
       },
       {
-        "id": "req_1786395094111_747",
-        "timestamp": "20:51:34",
+        "id": "req_1786396177459_660",
+        "timestamp": "21:09:37",
         "method": "POST",
         "path": "/api/v1/keys/batch-status",
         "statusCode": 200,
@@ -83,8 +100,8 @@
         "apiKey": "Anonymous"
       },
       {
-        "id": "req_1786395091110_565",
-        "timestamp": "20:51:31",
+        "id": "req_1786396174461_70",
+        "timestamp": "21:09:34",
         "method": "POST",
         "path": "/api/v1/keys/batch-status",
         "statusCode": 200,
@@ -92,8 +109,8 @@
         "apiKey": "Anonymous"
       },
       {
-        "id": "req_1786395088090_921",
-        "timestamp": "20:51:28",
+        "id": "req_1786396171452_778",
+        "timestamp": "21:09:31",
         "method": "POST",
         "path": "/api/v1/keys/batch-status",
         "statusCode": 200,
@@ -101,8 +118,8 @@
         "apiKey": "Anonymous"
       },
       {
-        "id": "req_1786395085103_735",
-        "timestamp": "20:51:25",
+        "id": "req_1786396168458_11",
+        "timestamp": "21:09:28",
         "method": "POST",
         "path": "/api/v1/keys/batch-status",
         "statusCode": 200,
@@ -110,21 +127,111 @@
         "apiKey": "Anonymous"
       },
       {
-        "id": "req_1786395083563_709",
-        "timestamp": "20:51:23",
-        "method": "GET",
-        "path": "/api/v1/instagram/stalk?apiKey=••••••••",
-        "statusCode": 400,
-        "latencyMs": 15,
-        "apiKey": "nx_free••••est"
-      },
-      {
-        "id": "req_1786395082120_799",
-        "timestamp": "20:51:22",
+        "id": "req_1786396165443_738",
+        "timestamp": "21:09:25",
         "method": "POST",
         "path": "/api/v1/keys/batch-status",
         "statusCode": 200,
-        "latencyMs": 3,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786396162464_235",
+        "timestamp": "21:09:22",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786396159452_309",
+        "timestamp": "21:09:19",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786396156193_467",
+        "timestamp": "21:09:16",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786396153191_153",
+        "timestamp": "21:09:13",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786396150373_548",
+        "timestamp": "21:09:10",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786396150371_73",
+        "timestamp": "21:09:10",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786396126462_16",
+        "timestamp": "21:08:46",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786396123452_820",
+        "timestamp": "21:08:43",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786396120450_312",
+        "timestamp": "21:08:40",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786396117462_194",
+        "timestamp": "21:08:37",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 1,
+        "apiKey": "Anonymous"
+      },
+      {
+        "id": "req_1786396114468_386",
+        "timestamp": "21:08:34",
+        "method": "POST",
+        "path": "/api/v1/keys/batch-status",
+        "statusCode": 200,
+        "latencyMs": 2,
         "apiKey": "Anonymous"
       }
     ]
