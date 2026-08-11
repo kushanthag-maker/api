@@ -21,7 +21,14 @@ import {
   LogOut,
   ShieldCheck,
   Ban,
-  FileText
+  FileText,
+  Globe,
+  Plus,
+  Trash2,
+  Play,
+  Layers,
+  ExternalLink,
+  Edit3
 } from 'lucide-react';
 
 interface AdminUserRecord {
@@ -126,6 +133,177 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
   const [generatingKey, setGeneratingKey] = useState<boolean>(false);
   const [generatedKeyResult, setGeneratedKeyResult] = useState<string | null>(null);
 
+  // Custom Vercel Endpoints Management State
+  const [customEndpoints, setCustomEndpoints] = useState<any[]>([]);
+  const [fetchingEndpoints, setFetchingEndpoints] = useState<boolean>(false);
+  const [showAddEndpointModal, setShowAddEndpointModal] = useState<boolean>(false);
+
+  // Endpoint Creation Form State
+  const [epName, setEpName] = useState<string>('');
+  const [epCategory, setEpCategory] = useState<string>('movie');
+  const [epCustomCategory, setEpCustomCategory] = useState<string>('');
+  const [epMethod, setEpMethod] = useState<'GET' | 'POST'>('GET');
+  const [epTargetUrl, setEpTargetUrl] = useState<string>('');
+  const [epCustomPath, setEpCustomPath] = useState<string>('');
+  const [epSummary, setEpSummary] = useState<string>('');
+  const [epDescription, setEpDescription] = useState<string>('');
+  const [epRateLimit, setEpRateLimit] = useState<string>('100 req/min');
+  const [epParamName, setEpParamName] = useState<string>('q');
+  const [epParamDesc, setEpParamDesc] = useState<string>('Search query or parameter');
+  const [epSampleJson, setEpSampleJson] = useState<string>('{\n  "status": true,\n  "results": []\n}');
+  const [creatingEndpoint, setCreatingEndpoint] = useState<boolean>(false);
+  const [testResultModal, setTestResultModal] = useState<{ title: string; data: any } | null>(null);
+
+  const fetchCustomEndpoints = async () => {
+    setFetchingEndpoints(true);
+    try {
+      const pass = getAdminPass();
+      const res = await safeFetch(`/api/v1/admin/endpoints?password=${encodeURIComponent(pass)}`, {
+        headers: { 'x-admin-password': pass }
+      });
+      const data = res.data;
+      if (data.status) {
+        setCustomEndpoints(data.endpoints || []);
+      }
+    } catch (e) {
+      console.warn('Failed to load custom endpoints:', e);
+    } finally {
+      setFetchingEndpoints(false);
+    }
+  };
+
+  const handleCreateCustomEndpoint = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!epName.trim() || !epTargetUrl.trim()) {
+      alert('Please fill in Endpoint Name and Target Vercel URL');
+      return;
+    }
+
+    setCreatingEndpoint(true);
+    try {
+      const finalCategory = epCategory === 'custom' ? (epCustomCategory.trim() || 'custom') : epCategory;
+      let parsedSample: any = { status: true, message: 'Connected to Vercel Endpoint' };
+      try {
+        if (epSampleJson.trim()) {
+          parsedSample = JSON.parse(epSampleJson);
+        }
+      } catch (err) {
+        // Fallback default sample object
+      }
+
+      const paramsList = [
+        { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus API Key', location: 'query', default: 'YOUR_NEXUS_API_KEY' }
+      ];
+      if (epParamName.trim()) {
+        paramsList.push({
+          name: epParamName.trim(),
+          type: 'string',
+          required: true,
+          description: epParamDesc.trim() || 'Target parameter',
+          location: epMethod === 'POST' ? 'body' : 'query',
+          default: ''
+        });
+      }
+
+      const pass = getAdminPass();
+      const res = await safeFetch('/api/v1/admin/endpoints', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: pass,
+          name: epName,
+          category: finalCategory,
+          method: epMethod,
+          targetUrl: epTargetUrl,
+          path: epCustomPath,
+          summary: epSummary,
+          description: epDescription,
+          rateLimit: epRateLimit,
+          params: paramsList,
+          sampleResponseBody: parsedSample
+        })
+      });
+
+      const data = res.data;
+      if (data.status) {
+        setActionSuccessMsg(`✅ Custom Vercel Endpoint '${data.endpoint.name}' registered successfully!`);
+        addAuditLog(`Registered New Vercel API: ${data.endpoint.name}`, 'API Gateway', 'INFO');
+        setShowAddEndpointModal(false);
+        // Reset form
+        setEpName('');
+        setEpTargetUrl('');
+        setEpCustomPath('');
+        setEpSummary('');
+        setEpDescription('');
+        fetchCustomEndpoints();
+      } else {
+        alert(data.message || 'Failed to create endpoint.');
+      }
+    } catch (err) {
+      alert('Error creating custom endpoint');
+    } finally {
+      setCreatingEndpoint(false);
+    }
+  };
+
+  const handleDeleteCustomEndpoint = async (endpointId: string, endpointName: string) => {
+    if (!confirm(`Are you sure you want to delete the endpoint '${endpointName}'?`)) return;
+
+    try {
+      const pass = getAdminPass();
+      const res = await safeFetch(`/api/v1/admin/endpoints/${endpointId}?password=${encodeURIComponent(pass)}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-password': pass }
+      });
+      const data = res.data;
+      if (data.status) {
+        setActionSuccessMsg(`Deleted endpoint '${endpointName}'`);
+        addAuditLog(`Deleted Endpoint: ${endpointName}`, 'API Gateway', 'WARN');
+        fetchCustomEndpoints();
+      }
+    } catch (err) {
+      alert('Failed to delete endpoint');
+    }
+  };
+
+  const handleToggleEndpointStatus = async (endpoint: any) => {
+    const nextStatus = endpoint.status === 'online' ? 'offline' : 'online';
+    try {
+      const pass = getAdminPass();
+      const res = await safeFetch(`/api/v1/admin/endpoints/${endpoint.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: pass,
+          status: nextStatus
+        })
+      });
+      const data = res.data;
+      if (data.status) {
+        setActionSuccessMsg(`Endpoint '${endpoint.name}' is now ${nextStatus.toUpperCase()}`);
+        fetchCustomEndpoints();
+      }
+    } catch (err) {
+      alert('Failed to toggle status');
+    }
+  };
+
+  const handleTestEndpoint = async (endpoint: any) => {
+    try {
+      const testUrl = endpoint.targetUrl;
+      const res = await safeFetch(testUrl, { method: endpoint.method });
+      setTestResultModal({
+        title: `Test Connection Response: ${endpoint.name}`,
+        data: res.data || { status: res.status, message: 'Response received from Vercel' }
+      });
+    } catch (e: any) {
+      setTestResultModal({
+        title: `Test Error: ${endpoint.name}`,
+        data: { error: e?.message || 'Connection failed or blocked by CORS' }
+      });
+    }
+  };
+
   // Helper to get active admin session password
   const getAdminPass = (): string => {
     try {
@@ -208,6 +386,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
       fetchAdminData();
       fetchPromoCodes();
       fetchBugReports();
+      fetchCustomEndpoints();
     }
   }, [isAuthenticated]);
 
@@ -967,6 +1146,135 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
         </div>
       </div>
 
+      {/* Vercel API Gateway & Custom Endpoints Manager */}
+      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-6 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+              <Globe className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-white font-mono">
+                  Vercel API Gateway & Custom Endpoints Manager
+                </h2>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  VERCEL PROXY
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Register external Vercel hosted API links with custom categories (Movie, Downloader, Instagram, AI, Anime, etc.).
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchCustomEndpoints}
+              className="px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-mono font-semibold flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${fetchingEndpoints ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+
+            <button
+              onClick={() => setShowAddEndpointModal(true)}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold font-mono shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Add Vercel Endpoint</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Custom Endpoints Table */}
+        <div className="overflow-x-auto border border-slate-800 rounded-xl">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-950 text-slate-400 font-mono uppercase text-[10px]">
+              <tr>
+                <th className="p-3.5">API Service Name & Path</th>
+                <th className="p-3.5">Category</th>
+                <th className="p-3.5">Target Vercel Host Link</th>
+                <th className="p-3.5">Method</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {customEndpoints.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-slate-500 font-mono">
+                    No custom Vercel endpoints registered yet. Click <strong className="text-indigo-400">+ Add Vercel Endpoint</strong> to add movie, downloader, or custom scrapers!
+                  </td>
+                </tr>
+              ) : (
+                customEndpoints.map((ep) => (
+                  <tr key={ep.id} className="hover:bg-slate-800/40 transition-colors">
+                    <td className="p-3.5">
+                      <div className="font-bold text-white font-mono">{ep.name}</div>
+                      <div className="text-[11px] text-cyan-300 font-mono flex items-center gap-1">
+                        <code>{ep.path}</code>
+                      </div>
+                    </td>
+
+                    <td className="p-3.5">
+                      <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold uppercase bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                        {ep.category}
+                      </span>
+                    </td>
+
+                    <td className="p-3.5 font-mono text-[11px] text-slate-400 max-w-xs truncate">
+                      <a href={ep.targetUrl} target="_blank" rel="noreferrer" className="hover:text-cyan-300 underline flex items-center gap-1">
+                        <span className="truncate">{ep.targetUrl}</span>
+                        <ExternalLink className="w-3 h-3 shrink-0" />
+                      </a>
+                    </td>
+
+                    <td className="p-3.5">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                        ep.method === 'POST' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      }`}>
+                        {ep.method}
+                      </span>
+                    </td>
+
+                    <td className="p-3.5">
+                      <button
+                        onClick={() => handleToggleEndpointStatus(ep)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold cursor-pointer transition-all ${
+                          ep.status === 'online' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30'
+                        }`}
+                      >
+                        ● {ep.status ? ep.status.toUpperCase() : 'ONLINE'}
+                      </button>
+                    </td>
+
+                    <td className="p-3.5 text-right space-x-2">
+                      <button
+                        onClick={() => handleTestEndpoint(ep)}
+                        className="px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold text-[11px] cursor-pointer font-mono inline-flex items-center gap-1"
+                        title="Test Vercel connection"
+                      >
+                        <Play className="w-3 h-3" />
+                        <span>Test Link</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteCustomEndpoint(ep.id, ep.name)}
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-[11px] cursor-pointer font-mono inline-flex items-center gap-1"
+                        title="Delete endpoint"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Real-time Security & Audit Logs Panel */}
       <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
         <div className="flex items-center justify-between">
@@ -1172,6 +1480,251 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onCoinsUpdated }) => {
                 Save Quota Limit
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add Custom Vercel Endpoint */}
+      {showAddEndpointModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl p-6 rounded-2xl bg-slate-900 border border-indigo-500/40 space-y-5 shadow-2xl animate-in zoom-in-95 my-8">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                  <Globe className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-mono">
+                    Register New Vercel Hosted API Endpoint
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Connect an external Vercel service to APINexus Gateway with custom categories.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddEndpointModal(false)}
+                className="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCustomEndpoint} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                {/* Endpoint Service Name */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 font-mono">
+                    API Service Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Sinhala Movie Search API"
+                    value={epName}
+                    onChange={(e) => setEpName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+
+                {/* Category Selection */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 font-mono">
+                    Category *
+                  </label>
+                  <select
+                    value={epCategory}
+                    onChange={(e) => setEpCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  >
+                    <option value="movie">Movie & Cinema</option>
+                    <option value="downloader">Video & Audio Downloader</option>
+                    <option value="instagram">Instagram Tools</option>
+                    <option value="news">News & Media</option>
+                    <option value="ai">AI & Machine Learning</option>
+                    <option value="anime">Anime & Manga</option>
+                    <option value="social">Social Media</option>
+                    <option value="utility">Utility & Data</option>
+                    <option value="custom">Type Custom Category...</option>
+                  </select>
+                </div>
+
+              </div>
+
+              {/* Custom Category Input if custom selected */}
+              {epCategory === 'custom' && (
+                <div className="space-y-1.5 p-3 rounded-xl bg-indigo-950/20 border border-indigo-500/30">
+                  <label className="text-xs font-bold text-indigo-300 font-mono">
+                    Type Custom Category Name:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. gaming, cricket, education, music..."
+                    value={epCustomCategory}
+                    onChange={(e) => setEpCustomCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                  />
+                </div>
+              )}
+
+              {/* Target Vercel Endpoint URL */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 font-mono">
+                  Target Vercel Hosted API URL *
+                </label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://your-vercel-app.vercel.app/api/search"
+                  value={epTargetUrl}
+                  onChange={(e) => setEpTargetUrl(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono text-cyan-300"
+                />
+                <p className="text-[10px] text-slate-500">
+                  APINexus proxy will forward requests & query parameters to this URL.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                {/* Method */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 font-mono">
+                    HTTP Method
+                  </label>
+                  <select
+                    value={epMethod}
+                    onChange={(e: any) => setEpMethod(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  >
+                    <option value="GET">GET Request</option>
+                    <option value="POST">POST Request</option>
+                  </select>
+                </div>
+
+                {/* Gateway Path */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 font-mono">
+                    Custom APINexus Path (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={`/api/v1/${epCategory}/${epName ? epName.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'search'}`}
+                    value={epCustomPath}
+                    onChange={(e) => setEpCustomPath(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+
+              </div>
+
+              {/* Summary & Description */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 font-mono">
+                  Short Description
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Search and fetch movie download links."
+                  value={epSummary}
+                  onChange={(e) => setEpSummary(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Primary Search Parameter */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 font-mono">
+                    Primary Query Parameter Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="q or username or url or query"
+                    value={epParamName}
+                    onChange={(e) => setEpParamName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300 font-mono">
+                    Parameter Description
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Search movie keyword or URL"
+                    value={epParamDesc}
+                    onChange={(e) => setEpParamDesc(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Sample Response Body */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 font-mono">
+                  Sample Response JSON (For Documentation & Testing)
+                </label>
+                <textarea
+                  rows={4}
+                  value={epSampleJson}
+                  onChange={(e) => setEpSampleJson(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-cyan-300 font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddEndpointModal(false)}
+                  className="flex-1 py-3 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-700 cursor-pointer font-mono"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingEndpoint}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs shadow-lg shadow-indigo-500/20 cursor-pointer font-mono flex items-center justify-center gap-2"
+                >
+                  {creatingEndpoint ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+                  <span>{creatingEndpoint ? 'Registering...' : 'Save & Register Endpoint'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Test Vercel Connection Result */}
+      {testResultModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+          <div className="w-full max-w-xl p-6 rounded-2xl bg-slate-900 border border-indigo-500/40 space-y-4 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-white font-mono flex items-center gap-2">
+                <Play className="w-4 h-4 text-indigo-400" />
+                <span>{testResultModal.title}</span>
+              </h3>
+              <button
+                onClick={() => setTestResultModal(null)}
+                className="text-slate-400 hover:text-white text-xs p-1 rounded bg-slate-800"
+              >
+                ✕
+              </button>
+            </div>
+
+            <pre className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-cyan-300 font-mono max-h-80 overflow-y-auto whitespace-pre-wrap">
+              {JSON.stringify(testResultModal.data, null, 2)}
+            </pre>
+
+            <button
+              onClick={() => setTestResultModal(null)}
+              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs font-mono cursor-pointer"
+            >
+              Close Test Window
+            </button>
           </div>
         </div>
       )}

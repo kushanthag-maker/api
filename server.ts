@@ -31,15 +31,44 @@ async function getMongoDb(): Promise<Db | null> {
   }
 }
 
-// Save state to disk to preserve request counts and keys permanently across server updates/restarts
+// Custom Endpoint Definition Interface
+export interface CustomEndpointRecord {
+  id: string;
+  name: string;
+  category: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  path: string;
+  targetUrl: string; // Vercel or external endpoint target URL
+  summary: string;
+  description: string;
+  rateLimit: string;
+  status: 'online' | 'offline' | 'degraded';
+  params: Array<{
+    name: string;
+    type: string;
+    required: boolean;
+    description: string;
+    default?: string;
+    location: 'query' | 'header' | 'body' | 'path';
+  }>;
+  sampleRequestBody?: Record<string, any>;
+  sampleResponseBody: Record<string, any>;
+  createdAt: string;
+}
+
+const customEndpointsMap = new Map<string, CustomEndpointRecord>();
+
+// Save state to disk to preserve request counts, keys, and custom endpoints permanently
 function saveStoreToDisk() {
   try {
     const keysArray = Array.from(serverKeysStore.entries());
+    const endpointsArray = Array.from(customEndpointsMap.values());
     const dataToSave = {
       globalApiRequestsCounter,
       claimedFreeEmails: Array.from(claimedFreeEmails),
       claimedFreeIPs: Array.from(claimedFreeIPs),
       keys: keysArray,
+      endpoints: endpointsArray,
       telemetry: {
         totalRequests: telemetryData.totalRequests,
         successfulRequests: telemetryData.successfulRequests,
@@ -73,6 +102,13 @@ function loadStoreFromDisk() {
           serverKeysStore.set(kStr, kObj);
         });
       }
+      if (Array.isArray(parsed.endpoints)) {
+        parsed.endpoints.forEach((ep: CustomEndpointRecord) => {
+          if (ep && ep.id) {
+            customEndpointsMap.set(ep.id, ep);
+          }
+        });
+      }
       if (parsed.telemetry) {
         telemetryData.totalRequests = parsed.telemetry.totalRequests || telemetryData.totalRequests;
         telemetryData.successfulRequests = parsed.telemetry.successfulRequests || telemetryData.successfulRequests;
@@ -80,7 +116,7 @@ function loadStoreFromDisk() {
         telemetryData.endpointHits = parsed.telemetry.endpointHits || telemetryData.endpointHits;
         telemetryData.recentLogs = parsed.telemetry.recentLogs || telemetryData.recentLogs;
       }
-      console.log(`💾 Restored store.json! Global Request Counter: ${globalApiRequestsCounter}, Total Keys: ${serverKeysStore.size}`);
+      console.log(`💾 Restored store.json! Global Requests: ${globalApiRequestsCounter}, Total Keys: ${serverKeysStore.size}, Custom Endpoints: ${customEndpointsMap.size}`);
     }
   } catch (e) {
     console.warn('⚠️ Could not load store.json:', e);
@@ -1215,6 +1251,340 @@ export function buildApp(): express.Application {
       message: `✅ API Key registered successfully!`
     });
   });
+
+  // ==========================================
+  // CUSTOM ENDPOINTS & VERCEL GATEWAY ROUTES
+  // ==========================================
+
+  // Public Get All API Endpoints (Built-in + Admin Configured Custom Vercel Endpoints)
+  app.get('/api/v1/endpoints', (_req: express.Request, res: express.Response) => {
+    const customList = Array.from(customEndpointsMap.values());
+    
+    // Built-in default endpoints if custom map is empty
+    const defaultList: CustomEndpointRecord[] = [
+      {
+        id: 'news-adaderana-list',
+        name: 'Ada Derana News List & Search API',
+        category: 'news',
+        method: 'GET',
+        path: '/api/v1/news/latest',
+        targetUrl: '',
+        summary: 'Fetch real-time news list, headlines & search results from Ada Derana feeds.',
+        description: 'Scrapes real-time headlines, relative timestamps, lead thumbnails, and direct article URLs directly from Sinhala Ada Derana (sinhala.adaderana.lk).',
+        rateLimit: '100 req/min',
+        status: 'online',
+        params: [
+          { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus API Key (or x-api-key header).', location: 'query', default: 'YOUR_NEXUS_API_KEY' },
+          { name: 'category', type: 'string', required: false, description: 'Category: latest, hot, sports, world, business, or entertainment.', location: 'query', default: 'latest' },
+          { name: 'q', type: 'string', required: false, description: 'Optional search keyword filter.', location: 'query', default: '' }
+        ],
+        sampleResponseBody: { status: true, category: 'LATEST', total_news: 15, results: [] },
+        createdAt: '2026-08-01'
+      },
+      {
+        id: 'news-adaderana-detail',
+        name: 'Ada Derana News Article Detail API',
+        category: 'news',
+        method: 'GET',
+        path: '/api/v1/news/detail',
+        targetUrl: '',
+        summary: 'Fetch full news article content, main image, timestamp, and metadata from Ada Derana.',
+        description: 'Scrapes full news article body text, lead image banner, publication timestamp, and source URL for any specific Ada Derana article link.',
+        rateLimit: '100 req/min',
+        status: 'online',
+        params: [
+          { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus API Key.', location: 'query', default: 'YOUR_NEXUS_API_KEY' },
+          { name: 'url', type: 'string', required: true, description: 'Full Ada Derana article URL.', location: 'query', default: 'https://sinhala.adaderana.lk/news_official.php?nid=192834' }
+        ],
+        sampleResponseBody: { status: true, title: 'මහනුවර ප්‍රධාන මාර්ගයේ රථවාහන තදබදයක්', paragraphs: [] },
+        createdAt: '2026-08-01'
+      }
+    ];
+
+    const mergedMap = new Map<string, CustomEndpointRecord>();
+    defaultList.forEach(item => mergedMap.set(item.id, item));
+    customList.forEach(item => mergedMap.set(item.id, item));
+
+    return res.json({
+      status: true,
+      total: mergedMap.size,
+      endpoints: Array.from(mergedMap.values())
+    });
+  });
+
+  // Admin List Custom Vercel Endpoints
+  app.get('/api/v1/admin/endpoints', (req: express.Request, res: express.Response) => {
+    const authHeader = req.headers['x-admin-password'] || req.query.password;
+    if (authHeader !== 'allkinglucifer') {
+      return res.status(401).json({ status: false, message: 'Invalid Admin Password.' });
+    }
+    const endpointsList = Array.from(customEndpointsMap.values());
+    return res.json({ status: true, endpoints: endpointsList });
+  });
+
+  // Admin Create / Add New Vercel Hosted Custom Endpoint
+  app.post('/api/v1/admin/endpoints', (req: express.Request, res: express.Response) => {
+    const { password, name, category, method, path: customPath, targetUrl, summary, description, rateLimit, params, sampleResponseBody } = req.body || {};
+    
+    if (password !== 'allkinglucifer') {
+      return res.status(401).json({ status: false, message: 'Invalid Admin Password.' });
+    }
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ status: false, message: 'Endpoint Name is required.' });
+    }
+
+    if (!targetUrl || typeof targetUrl !== 'string' || !targetUrl.trim().startsWith('http')) {
+      return res.status(400).json({ status: false, message: 'Valid Target Vercel / External Endpoint URL (http:// or https://) is required.' });
+    }
+
+    const cleanName = name.trim();
+    const cleanCategory = (category || 'utility').trim().toLowerCase();
+    const categorySlug = cleanCategory.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const nameSlug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    let endpointPath = customPath ? customPath.trim() : `/api/v1/${categorySlug}/${nameSlug}`;
+    if (!endpointPath.startsWith('/')) {
+      endpointPath = `/${endpointPath}`;
+    }
+
+    const endpointId = `ep_${categorySlug}_${nameSlug}_${Date.now().toString(36)}`;
+
+    const newEndpoint: CustomEndpointRecord = {
+      id: endpointId,
+      name: cleanName,
+      category: cleanCategory,
+      method: (method === 'POST' ? 'POST' : 'GET'),
+      path: endpointPath,
+      targetUrl: targetUrl.trim(),
+      summary: summary || `${cleanName} Hosted Vercel API Service.`,
+      description: description || `Custom Vercel API Service configured via APINexus Admin Panel. Category: ${cleanCategory}`,
+      rateLimit: rateLimit || '100 req/min',
+      status: 'online',
+      params: Array.isArray(params) ? params : [
+        { name: 'apiKey', type: 'string', required: true, description: 'Mandatory Nexus API Key', location: 'query', default: 'YOUR_NEXUS_API_KEY' }
+      ],
+      sampleResponseBody: sampleResponseBody && typeof sampleResponseBody === 'object' ? sampleResponseBody : { status: true, message: 'Vercel API Connected Successfully' },
+      createdAt: new Date().toISOString()
+    };
+
+    customEndpointsMap.set(endpointId, newEndpoint);
+    saveStoreToDisk();
+
+    return res.json({
+      status: true,
+      endpoint: newEndpoint,
+      message: `✅ Vercel API Endpoint '${cleanName}' created & registered successfully at '${endpointPath}'!`
+    });
+  });
+
+  // Admin Update Custom Endpoint
+  app.put('/api/v1/admin/endpoints/:id', (req: express.Request, res: express.Response) => {
+    const { password, name, category, method, path: customPath, targetUrl, summary, description, rateLimit, status, params, sampleResponseBody } = req.body || {};
+    const { id } = req.params;
+
+    if (password !== 'allkinglucifer') {
+      return res.status(401).json({ status: false, message: 'Invalid Admin Password.' });
+    }
+
+    if (!id || !customEndpointsMap.has(id)) {
+      return res.status(404).json({ status: false, message: 'Custom Endpoint not found.' });
+    }
+
+    const existing = customEndpointsMap.get(id)!;
+
+    if (name) existing.name = name.trim();
+    if (category) existing.category = category.trim().toLowerCase();
+    if (method) existing.method = method === 'POST' ? 'POST' : 'GET';
+    if (customPath) existing.path = customPath.trim().startsWith('/') ? customPath.trim() : `/${customPath.trim()}`;
+    if (targetUrl) existing.targetUrl = targetUrl.trim();
+    if (summary) existing.summary = summary;
+    if (description) existing.description = description;
+    if (rateLimit) existing.rateLimit = rateLimit;
+    if (status) existing.status = status;
+    if (Array.isArray(params)) existing.params = params;
+    if (sampleResponseBody) existing.sampleResponseBody = sampleResponseBody;
+
+    saveStoreToDisk();
+
+    return res.json({
+      status: true,
+      endpoint: existing,
+      message: `✅ Endpoint '${existing.name}' updated successfully!`
+    });
+  });
+
+  // Admin Delete Custom Endpoint
+  app.delete('/api/v1/admin/endpoints/:id', (req: express.Request, res: express.Response) => {
+    const authHeader = req.headers['x-admin-password'] || req.query.password || req.body?.password;
+    const { id } = req.params;
+
+    if (authHeader !== 'allkinglucifer') {
+      return res.status(401).json({ status: false, message: 'Invalid Admin Password.' });
+    }
+
+    if (!id || !customEndpointsMap.has(id)) {
+      return res.status(404).json({ status: false, message: 'Endpoint not found.' });
+    }
+
+    const deleted = customEndpointsMap.get(id);
+    customEndpointsMap.delete(id);
+    saveStoreToDisk();
+
+    return res.json({
+      status: true,
+      message: `🗑️ Custom Endpoint '${deleted?.name}' deleted successfully.`
+    });
+  });
+
+  // Universal Gateway Proxy Handler Function for Vercel/External Endpoints
+  const handleUniversalVercelProxy = async (req: express.Request, res: express.Response) => {
+    const authCheck = verifyApiKey(req);
+    if (!authCheck.allowed && authCheck.errorResponse) {
+      return res.status(authCheck.errorResponse.statusCode).json(authCheck.errorResponse.payload);
+    }
+
+    // Identify target endpoint by query endpointId, path parameter, or exact path match
+    const requestPath = req.path;
+    let targetEp: CustomEndpointRecord | undefined;
+
+    const endpointIdQuery = (req.query.endpointId || req.query.ep_id || req.body?.endpointId) as string | undefined;
+    if (endpointIdQuery && customEndpointsMap.has(endpointIdQuery)) {
+      targetEp = customEndpointsMap.get(endpointIdQuery);
+    }
+
+    if (!targetEp) {
+      // Find by matching configured path
+      for (const ep of customEndpointsMap.values()) {
+        if (ep.path === requestPath || requestPath.endsWith(ep.path) || (ep.path.length > 5 && requestPath.includes(ep.path))) {
+          targetEp = ep;
+          break;
+        }
+      }
+    }
+
+    if (!targetEp) {
+      // Fallback search by category/slug in request URL
+      for (const ep of customEndpointsMap.values()) {
+        const pathParts = ep.path.split('/').filter(Boolean);
+        const reqParts = requestPath.split('/').filter(Boolean);
+        if (pathParts.length > 0 && reqParts.length > 0 && reqParts[reqParts.length - 1] === pathParts[pathParts.length - 1]) {
+          targetEp = ep;
+          break;
+        }
+      }
+    }
+
+    if (!targetEp) {
+      return res.status(404).json({
+        status: false,
+        error: 'ENDPOINT_NOT_REGISTERED',
+        message: `No active Vercel API target registered for route '${requestPath}'. Please add the endpoint in Admin Panel.`
+      });
+    }
+
+    if (targetEp.status === 'offline') {
+      return res.status(503).json({
+        status: false,
+        error: 'ENDPOINT_OFFLINE',
+        message: `The requested endpoint '${targetEp.name}' is currently set to Offline by System Admin.`
+      });
+    }
+
+    if (!targetEp.targetUrl) {
+      return res.status(500).json({
+        status: false,
+        error: 'MISSING_TARGET_URL',
+        message: `No Vercel target URL configured for endpoint '${targetEp.name}'.`
+      });
+    }
+
+    try {
+      // Build forward parameters
+      const forwardParams: Record<string, any> = { ...req.query };
+      delete forwardParams.apiKey;
+      delete forwardParams.key;
+      delete forwardParams.api_key;
+      delete forwardParams.endpointId;
+      delete forwardParams.ep_id;
+
+      let responseData: any;
+      let targetStatus = 200;
+
+      if (targetEp.method === 'POST') {
+        const postPayload = { ...req.body };
+        delete postPayload.apiKey;
+        delete postPayload.key;
+        delete postPayload.api_key;
+
+        const proxyRes = await axios.post(targetEp.targetUrl, postPayload, {
+          params: forwardParams,
+          headers: {
+            'User-Agent': 'Nexus-API-Gateway/2.0 (Cloud-Run-Proxy)',
+            'Accept': 'application/json, text/plain, */*'
+          },
+          timeout: 15000
+        });
+        responseData = proxyRes.data;
+        targetStatus = proxyRes.status;
+      } else {
+        const proxyRes = await axios.get(targetEp.targetUrl, {
+          params: forwardParams,
+          headers: {
+            'User-Agent': 'Nexus-API-Gateway/2.0 (Cloud-Run-Proxy)',
+            'Accept': 'application/json, text/plain, */*'
+          },
+          timeout: 15000
+        });
+        responseData = proxyRes.data;
+        targetStatus = proxyRes.status;
+      }
+
+      // Return proximal Vercel payload
+      if (typeof responseData === 'object' && responseData !== null) {
+        return res.status(targetStatus).json({
+          ...responseData,
+          nexus_gateway: {
+            proxy_status: 'SUCCESS',
+            endpoint_id: targetEp.id,
+            api_key: authCheck.apiKey
+          }
+        });
+      }
+
+      return res.status(targetStatus).send(responseData);
+
+    } catch (err: any) {
+      console.warn(`Vercel Proxy Error for [${targetEp.name}] -> ${targetEp.targetUrl}:`, err?.message);
+      
+      // Return sample response fallback or error message
+      if (targetEp.sampleResponseBody) {
+        return res.json({
+          ...targetEp.sampleResponseBody,
+          nexus_gateway: {
+            proxy_status: 'FALLBACK_SAMPLE',
+            endpoint_id: targetEp.id,
+            note: 'Vercel target endpoint timed out or was unavailable. Returned sample response structure.',
+            target_url: targetEp.targetUrl,
+            error: err?.message || 'Upstream Vercel Connection Timeout'
+          }
+        });
+      }
+
+      return res.status(502).json({
+        status: false,
+        error: 'VERCEL_PROXY_FAILED',
+        message: `Failed to fetch response from Vercel target URL: ${targetEp.targetUrl}`,
+        details: err?.message || 'Gateway Timeout'
+      });
+    }
+  };
+
+  // Register Proxy Catchers
+  app.get('/api/v1/proxy', handleUniversalVercelProxy);
+  app.post('/api/v1/proxy', handleUniversalVercelProxy);
+  app.get('/api/v1/custom/*', handleUniversalVercelProxy);
+  app.post('/api/v1/custom/*', handleUniversalVercelProxy);
 
   // Real-Time Telemetry Stats Endpoint
   app.get('/api/v1/telemetry/stats', (_req: express.Request, res: express.Response) => {

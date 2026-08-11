@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { safeFetch } from '../lib/api';
 import { 
   NEXUS_ENDPOINTS, 
@@ -44,10 +44,44 @@ interface ApiExplorerProps {
 }
 
 export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeysModal }) => {
+  const [endpointsList, setEndpointsList] = useState<ApiEndpoint[]>(NEXUS_ENDPOINTS);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint>(NEXUS_ENDPOINTS[0]);
   const [activeCodeLang, setActiveCodeLang] = useState<CodeLanguage>('javascript');
+
+  // Fetch live endpoints (built-in + admin configured custom Vercel endpoints)
+  useEffect(() => {
+    const fetchLiveEndpoints = async () => {
+      try {
+        const res = await safeFetch('/api/v1/endpoints');
+        const data = res.data;
+        if (data.status && Array.isArray(data.endpoints) && data.endpoints.length > 0) {
+          setEndpointsList(data.endpoints);
+          // If current selected endpoint is default, keep or update
+          if (!data.endpoints.some((e: any) => e.id === selectedEndpoint.id)) {
+            setSelectedEndpoint(data.endpoints[0]);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load live dynamic endpoints list', err);
+      }
+    };
+    fetchLiveEndpoints();
+  }, []);
+
+  // Compute dynamic categories
+  const categoriesMap = new Map<string, string>();
+  categoriesMap.set('all', 'All Endpoints');
+  endpointsList.forEach(ep => {
+    if (ep.category) {
+      const catKey = ep.category.toLowerCase();
+      const catLabel = catKey.charAt(0).toUpperCase() + catKey.slice(1) + ' APIs';
+      categoriesMap.set(catKey, catLabel);
+    }
+  });
+
+  const categoriesList = Array.from(categoriesMap.entries()).map(([id, label]) => ({ id, label }));
   
   // Parameter State for the selected endpoint
   const [paramValues, setParamValues] = useState<Record<string, any>>(() => {
@@ -84,12 +118,12 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
   });
 
   // Filter endpoints
-  const filteredEndpoints = NEXUS_ENDPOINTS.filter(ep => {
-    const matchesCategory = selectedCategory === 'all' || ep.category === selectedCategory;
+  const filteredEndpoints = endpointsList.filter(ep => {
+    const matchesCategory = selectedCategory === 'all' || ep.category?.toLowerCase() === selectedCategory.toLowerCase();
     const matchesSearch = 
       ep.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ep.path.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ep.summary.toLowerCase().includes(searchQuery.toLowerCase());
+      (ep.summary && ep.summary.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
 
@@ -336,14 +370,11 @@ export const ApiExplorer: React.FC<ApiExplorerProps> = ({ activeKeys, onOpenKeys
 
           {/* Category Filter Chips */}
           <div className="flex flex-wrap gap-1.5 p-1 bg-slate-900/80 rounded-xl border border-slate-800 text-xs">
-            {[
-              { id: 'all', label: 'All Endpoints' },
-              { id: 'news', label: 'News Scraper API' }
-            ].map(cat => (
+            {categoriesList.map(cat => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer font-mono ${
                   selectedCategory === cat.id
                     ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'

@@ -1,6 +1,6 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
-export type ApiCategory = 'ai' | 'auth' | 'data' | 'utility' | 'news' | 'instagram';
+export type ApiCategory = 'ai' | 'auth' | 'data' | 'utility' | 'news' | 'instagram' | 'movie' | 'downloader' | 'anime' | 'social' | string;
 
 export type ApiStatus = 'online' | 'offline' | 'degraded';
 
@@ -19,6 +19,7 @@ export interface ApiEndpoint {
   category: ApiCategory;
   method: HttpMethod;
   path: string;
+  targetUrl?: string; // Vercel or external target URL for proxying
   summary: string;
   description: string;
   rateLimit: string;
@@ -28,6 +29,7 @@ export interface ApiEndpoint {
   sampleRequestBody?: Record<string, any>;
   sampleResponseBody: Record<string, any>;
   defaultHeaders?: Record<string, string>;
+  createdAt?: string;
 }
 
 export interface ApiKey {
